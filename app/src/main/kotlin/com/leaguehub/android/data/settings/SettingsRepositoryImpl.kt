@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.leaguehub.android.data.espn.EspnJson
 import com.leaguehub.android.domain.model.FavoriteClub
+import com.leaguehub.android.domain.model.FollowedClub
 import com.leaguehub.android.domain.repository.AppLanguage
 import com.leaguehub.android.domain.repository.AppSettings
 import com.leaguehub.android.domain.repository.SettingsRepository
@@ -16,6 +17,7 @@ import com.leaguehub.android.domain.repository.ThemeMode
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.builtins.ListSerializer
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -34,6 +36,19 @@ class SettingsRepositoryImpl @Inject constructor(
         val CLUB_THEME = booleanPreferencesKey("club_theme")
         val NOTIFY_KICKOFF = booleanPreferencesKey("notify_kickoff")
         val NOTIFY_GOALS = booleanPreferencesKey("notify_goals")
+        val FOLLOWED = stringPreferencesKey("followed")
+    }
+
+    private val followedSerializer = ListSerializer(FollowedClub.serializer())
+
+    private fun decodeFollowed(json: String?): List<FollowedClub> =
+        json?.let { runCatching { EspnJson.decodeFromString(followedSerializer, it) }.getOrNull() }.orEmpty()
+
+    /** Modifie la liste des clubs suivis en une seule écriture. */
+    private suspend fun editFollowed(transform: (List<FollowedClub>) -> List<FollowedClub>) {
+        context.settingsStore.edit {
+            it[Keys.FOLLOWED] = EspnJson.encodeToString(followedSerializer, transform(decodeFollowed(it[Keys.FOLLOWED])))
+        }
     }
 
     override val settings: Flow<AppSettings> = context.settingsStore.data.map { p ->
@@ -44,6 +59,7 @@ class SettingsRepositoryImpl @Inject constructor(
             clubTheme = p[Keys.CLUB_THEME] ?: false,
             notifyKickoff = p[Keys.NOTIFY_KICKOFF] ?: true,
             notifyGoals = p[Keys.NOTIFY_GOALS] ?: true,
+            followed = decodeFollowed(p[Keys.FOLLOWED]),
         )
     }
 
@@ -71,5 +87,15 @@ class SettingsRepositoryImpl @Inject constructor(
             it[Keys.NOTIFY_KICKOFF] = kickoff
             it[Keys.NOTIFY_GOALS] = goals
         }
+    }
+
+    override suspend fun follow(club: FavoriteClub) = editFollowed { list ->
+        if (list.any { it.club.teamId == club.teamId }) list else list + FollowedClub(club)
+    }
+
+    override suspend fun unfollow(teamId: String) = editFollowed { list -> list.filterNot { it.club.teamId == teamId } }
+
+    override suspend fun setFollowedNotifications(teamId: String, kickoff: Boolean, goals: Boolean) = editFollowed { list ->
+        list.map { if (it.club.teamId == teamId) it.copy(notifyKickoff = kickoff, notifyGoals = goals) else it }
     }
 }
