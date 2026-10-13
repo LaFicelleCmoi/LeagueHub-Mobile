@@ -1,5 +1,6 @@
 package com.leaguehub.android.ui.ldctracker
 
+import com.leaguehub.android.ui.components.LiveOpponent
 import com.leaguehub.android.ui.components.segmentPosition
 import com.leaguehub.android.ui.components.listSegment
 import com.leaguehub.android.ui.components.SegmentPosition
@@ -178,6 +179,7 @@ private fun LeaguePhaseTab(state: LdcUiState, onTeam: (String) -> Unit, onMatch:
                             teamId = r.teamId, rank = if (r.sharedRank) "=" + r.rank else r.rank.toString(), name = r.name,
                             logo = r.logo, played = r.played, goalDiff = r.goalDiff, points = r.points,
                             zoneColor = phaseZoneColor(zone), live = r.live,
+                            liveOpponent = liveOpponentOf(r.teamId, state.liveMatches),
                         ),
                         favoriteId = state.favoriteId,
                         onClick = { onTeam(r.teamId) },
@@ -201,6 +203,15 @@ private fun LeaguePhaseTab(state: LdcUiState, onTeam: (String) -> Unit, onMatch:
         }
         item { Spacer(Modifier.height(24.dp)) }
     }
+}
+
+/** Adversaire et score du match en cours d'une équipe, vus de son côté. */
+private fun liveOpponentOf(teamId: String, live: List<Match>): LiveOpponent? {
+    val m = live.firstOrNull { it.state == MatchState.IN && (it.home.team.id == teamId || it.away.team.id == teamId) } ?: return null
+    val home = m.home.team.id == teamId
+    val us = if (home) m.home else m.away
+    val them = if (home) m.away else m.home
+    return LiveOpponent(them.team.logo, "${us.score ?: 0}-${them.score ?: 0}")
 }
 
 private fun zoneTitle(zone: PhaseZone) = when (zone) {
