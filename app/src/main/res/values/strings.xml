@@ -153,6 +153,13 @@
     <string name="date_tbd">Date à venir</string>
 
     <!-- Club -->
+    <string name="follow_club">Suivre ce club</string>
+    <string name="unfollow_club">Ne plus suivre ce club</string>
+    <string name="followed_clubs">Clubs suivis</string>
+    <string name="followed_empty">Suivez d\'autres clubs avec la cloche de leur fiche : leurs matchs et leurs notifications en plus de votre favori.</string>
+    <string name="add_club">Ajouter un club</string>
+    <string name="notif_kickoff_short">Coup d\'envoi</string>
+    <string name="notif_goals_short">Buts</string>
     <string name="set_favorite">Définir comme club favori</string>
     <string name="unset_favorite">Retirer des favoris</string>
     <string name="favorite_club">Club favori</string>
@@ -224,5 +231,10 @@
     <string name="widget_in_days">Dans %1$d jours</string>
     <string name="widget_home">À domicile</string>
     <string name="widget_away">À l\'extérieur</string>
+    <string name="widget_today_title">Matchs du jour</string>
+    <string name="widget_today_description">Direct, à venir et résultats des 6 compétitions</string>
+    <string name="widget_today_empty">Aucun match aujourd\'hui</string>
+    <string name="widget_live_count">%1$d en direct</string>
+    <string name="loading_short">Chargement…</string>
     <string name="widget_description">Prochain match de votre club favori</string>
 </resources>
