@@ -35,6 +35,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.NotificationAdd
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.Icon
@@ -81,7 +83,7 @@ fun ClubScreen(
         form == null -> LoadingState()
         else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp)) {
             item {
-                ClubHero(form, viewModel.league.name, state.isFavorite, viewModel::toggleFavorite)
+                ClubHero(form, viewModel.league.name, state.isFavorite, viewModel::toggleFavorite, state.isFollowed, viewModel::toggleFollow)
             }
             // Chiffres de la saison en tuiles.
             item {
@@ -184,7 +186,14 @@ fun ClubScreen(
 
 /** En-tête du club : dégradé à ses couleurs, logo, nom, compétition, forme et étoile favori. */
 @Composable
-private fun ClubHero(form: TeamForm, league: String, isFavorite: Boolean, onToggleFavorite: () -> Unit) {
+private fun ClubHero(
+    form: TeamForm,
+    league: String,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
+    isFollowed: Boolean,
+    onToggleFollow: () -> Unit,
+) {
     val clubColor = parseHex(form.team.color) ?: MaterialTheme.colorScheme.primary
     AppCard(Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
         Box(
@@ -199,6 +208,17 @@ private fun ClubHero(form: TeamForm, league: String, isFavorite: Boolean, onTogg
                     Column(Modifier.weight(1f)) {
                         Text(form.team.name, style = MaterialTheme.typography.headlineSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         Text(league, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    // Cloche : suivre le club (notifications et accueil) sans changer le favori.
+                    if (!isFavorite) {
+                        FilledTonalIconButton(onClick = onToggleFollow) {
+                            Icon(
+                                if (isFollowed) Icons.Filled.NotificationsActive else Icons.Outlined.NotificationAdd,
+                                contentDescription = stringResource(if (isFollowed) R.string.unfollow_club else R.string.follow_club),
+                                tint = if (isFollowed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.width(6.dp))
                     }
                     FilledTonalIconButton(onClick = onToggleFavorite) {
                         Icon(
