@@ -1,5 +1,16 @@
 package com.leaguehub.android.ui.settings
 
+import com.leaguehub.android.domain.model.FollowedClub
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.filled.SportsSoccer
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.layout.size
 import com.leaguehub.android.ui.components.SegmentDivider
 import com.leaguehub.android.ui.components.AppCard
 import androidx.compose.ui.text.style.TextAlign
@@ -63,6 +74,9 @@ class SettingsViewModel @Inject constructor(private val repo: SettingsRepository
     fun clearFavorite() = viewModelScope.launch { repo.setFavorite(null) }
     fun clubTheme(enabled: Boolean) = viewModelScope.launch { repo.setClubTheme(enabled) }
     fun notifications(kickoff: Boolean, goals: Boolean) = viewModelScope.launch { repo.setNotifications(kickoff, goals) }
+    fun unfollow(teamId: String) = viewModelScope.launch { repo.unfollow(teamId) }
+    fun followedNotifications(teamId: String, kickoff: Boolean, goals: Boolean) =
+        viewModelScope.launch { repo.setFollowedNotifications(teamId, kickoff, goals) }
 }
 
 @Composable
@@ -87,6 +101,41 @@ fun SettingsScreen(onPickFavorite: () -> Unit, viewModel: SettingsViewModel = hi
             }
             SegmentDivider()
             Toggle(stringResource(R.string.club_theme), s.clubTheme, enabled = s.favorite?.color != null) { viewModel.clubTheme(it) }
+        }
+
+        // Clubs suivis : chacun ses notifications.
+        SectionTitle(stringResource(R.string.followed_clubs))
+        SettingsGroup {
+            val followed = s.followed.filter { it.club.teamId != s.favorite?.teamId }
+            if (followed.isEmpty()) {
+                Text(
+                    stringResource(R.string.followed_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+            followed.forEachIndexed { i, f ->
+                if (i > 0) SegmentDivider()
+                FollowedRow(
+                    f,
+                    onKickoff = { on ->
+                        if (on) askPermission(permission::launch)
+                        viewModel.followedNotifications(f.club.teamId, on, f.notifyGoals)
+                    },
+                    onGoals = { on ->
+                        if (on) askPermission(permission::launch)
+                        viewModel.followedNotifications(f.club.teamId, f.notifyKickoff, on)
+                    },
+                    onRemove = { viewModel.unfollow(f.club.teamId) },
+                )
+            }
+            SegmentDivider()
+            TextButton(onClick = onPickFavorite, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+                Icon(Icons.Default.Add, null, Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.add_club))
+            }
         }
 
         SectionTitle(stringResource(R.string.settings_appearance))
@@ -130,6 +179,33 @@ fun SettingsScreen(onPickFavorite: () -> Unit, viewModel: SettingsViewModel = hi
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 20.dp),
         )
+    }
+}
+
+/** Un club suivi : logo, nom, interrupteurs de notifications (coup d'envoi, buts) et retrait. */
+@Composable
+private fun FollowedRow(f: FollowedClub, onKickoff: (Boolean) -> Unit, onGoals: (Boolean) -> Unit, onRemove: () -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TeamLogo(f.club.logo, size = 32.dp)
+            Spacer(Modifier.width(12.dp))
+            Text(f.club.name, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            IconButton(onClick = onRemove) {
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.unfollow_club), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        Row(Modifier.padding(start = 44.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(
+                selected = f.notifyKickoff, onClick = { onKickoff(!f.notifyKickoff) },
+                label = { Text(stringResource(R.string.notif_kickoff_short)) },
+                leadingIcon = { Icon(Icons.Default.Schedule, null, Modifier.size(16.dp)) },
+            )
+            FilterChip(
+                selected = f.notifyGoals, onClick = { onGoals(!f.notifyGoals) },
+                label = { Text(stringResource(R.string.notif_goals_short)) },
+                leadingIcon = { Icon(Icons.Default.SportsSoccer, null, Modifier.size(16.dp)) },
+            )
+        }
     }
 }
 
