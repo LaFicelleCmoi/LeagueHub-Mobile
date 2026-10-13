@@ -1,0 +1,732 @@
+{
+  "slug": "bundesliga",
+  "updatedAt": "2026-09-20",
+  "clubs": {
+    "122": {
+      "qid": "Q104770",
+      "name": "FC Cologne",
+      "total": 8,
+      "trophies": [
+        {
+          "key": "coupe",
+          "label": "Coupe d'Allemagne",
+          "count": 4,
+          "years": [
+            "1968",
+            "1977",
+            "1978",
+            "1983"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "championnat",
+          "label": "Championnat d'Allemagne",
+          "count": 3,
+          "years": [
+            "1962",
+            "1964",
+            "1978"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "autre:Q112251974",
+          "label": "PSD-Bank-Cup",
+          "count": 1,
+          "years": [
+            "2021"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "124": {
+      "qid": "Q41420",
+      "name": "Borussia Dortmund",
+      "total": 15,
+      "trophies": [
+        {
+          "key": "championnat",
+          "label": "Championnat d'Allemagne",
+          "count": 8,
+          "years": [
+            "1956",
+            "1957",
+            "1963",
+            "1995",
+            "1996",
+            "2002",
+            "2011",
+            "2012"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "coupe",
+          "label": "Coupe d'Allemagne",
+          "count": 5,
+          "years": [
+            "1965",
+            "1989",
+            "2012",
+            "2017",
+            "2021"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "c2",
+          "label": "Coupe des coupes",
+          "count": 1,
+          "years": [
+            "1966"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "c1",
+          "label": "Ligue des champions",
+          "count": 1,
+          "years": [
+            "1997"
+          ],
+          "scope": "europe"
+        }
+      ]
+    },
+    "125": {
+      "qid": "Q38245",
+      "name": "Eintracht Frankfurt",
+      "total": 10,
+      "trophies": [
+        {
+          "key": "coupe",
+          "label": "Coupe d'Allemagne",
+          "count": 5,
+          "years": [
+            "1974",
+            "1975",
+            "1981",
+            "1988",
+            "2018"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "championnat",
+          "label": "Championnat d'Allemagne",
+          "count": 1,
+          "years": [
+            "1959"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "c3",
+          "label": "Ligue Europa",
+          "count": 2,
+          "years": [
+            "1980",
+            "2022"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "autre:Q316340",
+          "label": "Hessenliga",
+          "count": 2,
+          "years": [],
+          "scope": "autre"
+        }
+      ]
+    },
+    "126": {
+      "qid": "Q106394",
+      "name": "SC Freiburg",
+      "total": 3,
+      "trophies": [
+        {
+          "key": "autre:Q126994041",
+          "label": "Q126994041",
+          "count": 3,
+          "years": [],
+          "scope": "autre"
+        }
+      ]
+    },
+    "127": {
+      "qid": "Q51974",
+      "name": "Hamburg SV",
+      "total": 30,
+      "trophies": [
+        {
+          "key": "championnat",
+          "label": "Championnat d'Allemagne",
+          "count": 6,
+          "years": [
+            "1923",
+            "1928",
+            "1960",
+            "1979",
+            "1982",
+            "1983"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "coupe",
+          "label": "Coupe d'Allemagne",
+          "count": 3,
+          "years": [
+            "1963",
+            "1976",
+            "1987"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "coupe-ligue",
+          "label": "Coupe de la Ligue allemande",
+          "count": 2,
+          "years": [
+            "1973",
+            "2003"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "c2",
+          "label": "Coupe des coupes",
+          "count": 1,
+          "years": [
+            "1977"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "c1",
+          "label": "Ligue des champions",
+          "count": 1,
+          "years": [
+            "1983"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "autre:Q52041",
+          "label": "Oberliga",
+          "count": 15,
+          "years": [
+            "1948",
+            "1949",
+            "1950",
+            "1951",
+            "1952",
+            "1953",
+            "1955",
+            "1956",
+            "1957",
+            "1958",
+            "1959",
+            "1960",
+            "1961",
+            "1962",
+            "1963"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q182068",
+          "label": "Coupe Intertoto",
+          "count": 2,
+          "years": [
+            "2005",
+            "2007"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "131": {
+      "qid": "Q104761",
+      "name": "Bayer Leverkusen",
+      "total": 3,
+      "trophies": [
+        {
+          "key": "coupe",
+          "label": "Coupe d'Allemagne",
+          "count": 2,
+          "years": [
+            "1993",
+            "2024"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "c3",
+          "label": "Ligue Europa",
+          "count": 1,
+          "years": [
+            "1988"
+          ],
+          "scope": "europe"
+        }
+      ]
+    },
+    "132": {
+      "qid": "Q15789",
+      "name": "Bayern Munich",
+      "total": 71,
+      "trophies": [
+        {
+          "key": "championnat",
+          "label": "Championnat d'Allemagne",
+          "count": 30,
+          "years": [
+            "1932",
+            "1972",
+            "1973",
+            "1974",
+            "1980",
+            "1981",
+            "1985",
+            "1986",
+            "1987",
+            "1989",
+            "1990",
+            "1994",
+            "1997",
+            "1999",
+            "2000",
+            "2001",
+            "2003",
+            "2005",
+            "2006",
+            "2008",
+            "2010",
+            "2013",
+            "2014",
+            "2015",
+            "2016",
+            "2017",
+            "2018",
+            "2019",
+            "2020",
+            "2026"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "coupe",
+          "label": "Coupe d'Allemagne",
+          "count": 21,
+          "years": [
+            "1957",
+            "1966",
+            "1967",
+            "1969",
+            "1971",
+            "1982",
+            "1984",
+            "1986",
+            "1998",
+            "2000",
+            "2003",
+            "2005",
+            "2006",
+            "2008",
+            "2010",
+            "2013",
+            "2014",
+            "2016",
+            "2019",
+            "2020",
+            "2026"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "coupe-ligue",
+          "label": "Coupe de la Ligue allemande",
+          "count": 6,
+          "years": [
+            "1997",
+            "1998",
+            "1999",
+            "2000",
+            "2004",
+            "2007"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "c1",
+          "label": "Ligue des champions",
+          "count": 6,
+          "years": [
+            "1974",
+            "1975",
+            "1976",
+            "2001",
+            "2013",
+            "2020"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "supercoupe-europe",
+          "label": "Supercoupe d'Europe",
+          "count": 2,
+          "years": [
+            "2013",
+            "2020"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "c2",
+          "label": "Coupe des coupes",
+          "count": 1,
+          "years": [
+            "1967"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "c3",
+          "label": "Ligue Europa",
+          "count": 1,
+          "years": [
+            "1996"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "mondial",
+          "label": "Coupe du monde des clubs",
+          "count": 2,
+          "years": [
+            "2013",
+            "2020"
+          ],
+          "scope": "monde"
+        },
+        {
+          "key": "intercontinentale",
+          "label": "Coupe intercontinentale",
+          "count": 2,
+          "years": [
+            "1976",
+            "2001"
+          ],
+          "scope": "monde"
+        }
+      ]
+    },
+    "133": {
+      "qid": "Q32494",
+      "name": "Schalke 04",
+      "total": 16,
+      "trophies": [
+        {
+          "key": "championnat",
+          "label": "Championnat d'Allemagne",
+          "count": 7,
+          "years": [
+            "1934",
+            "1935",
+            "1937",
+            "1939",
+            "1940",
+            "1942",
+            "1958"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "coupe",
+          "label": "Coupe d'Allemagne",
+          "count": 5,
+          "years": [
+            "1937",
+            "1972",
+            "2001",
+            "2002",
+            "2011"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "coupe-ligue",
+          "label": "Coupe de la Ligue allemande",
+          "count": 1,
+          "years": [
+            "2005"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "c3",
+          "label": "Ligue Europa",
+          "count": 1,
+          "years": [
+            "1997"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "autre:Q182068",
+          "label": "Coupe Intertoto",
+          "count": 2,
+          "years": [
+            "2003",
+            "2004"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "134": {
+      "qid": "Q4512",
+      "name": "VfB Stuttgart",
+      "total": 11,
+      "trophies": [
+        {
+          "key": "championnat",
+          "label": "Championnat d'Allemagne",
+          "count": 5,
+          "years": [
+            "1950",
+            "1952",
+            "1984",
+            "1992",
+            "2007"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "coupe",
+          "label": "Coupe d'Allemagne",
+          "count": 4,
+          "years": [
+            "1954",
+            "1958",
+            "1997",
+            "2025"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "autre:Q182068",
+          "label": "Coupe Intertoto",
+          "count": 2,
+          "years": [
+            "2000",
+            "2002"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "137": {
+      "qid": "Q51976",
+      "name": "Werder Bremen",
+      "total": 13,
+      "trophies": [
+        {
+          "key": "coupe",
+          "label": "Coupe d'Allemagne",
+          "count": 6,
+          "years": [
+            "1961",
+            "1991",
+            "1994",
+            "1999",
+            "2004",
+            "2009"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "championnat",
+          "label": "Championnat d'Allemagne",
+          "count": 4,
+          "years": [
+            "1965",
+            "1988",
+            "1993",
+            "2004"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "coupe-ligue",
+          "label": "Coupe de la Ligue allemande",
+          "count": 1,
+          "years": [
+            "2006"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "c2",
+          "label": "Coupe des coupes",
+          "count": 1,
+          "years": [
+            "1992"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "autre:Q182068",
+          "label": "Coupe Intertoto",
+          "count": 1,
+          "years": [
+            "1998"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "268": {
+      "qid": "Q101959",
+      "name": "Borussia Mönchengladbach",
+      "total": 11,
+      "trophies": [
+        {
+          "key": "championnat",
+          "label": "Championnat d'Allemagne",
+          "count": 5,
+          "years": [
+            "1970",
+            "1971",
+            "1975",
+            "1976",
+            "1977"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "coupe",
+          "label": "Coupe d'Allemagne",
+          "count": 3,
+          "years": [
+            "1960",
+            "1973",
+            "1995"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "c3",
+          "label": "Ligue Europa",
+          "count": 2,
+          "years": [
+            "1975",
+            "1979"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "autre:Q113159",
+          "label": "championnat d'Allemagne féminin de football de deuxième division",
+          "count": 1,
+          "years": [
+            "2018"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "598": {
+      "qid": "Q141971",
+      "name": "1. FC Union Berlin",
+      "total": 2,
+      "trophies": [
+        {
+          "key": "autre:Q2188121",
+          "label": "championnat d'Allemagne de football de quatrième division",
+          "count": 1,
+          "years": [
+            "2001"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q316686",
+          "label": "Fußball-Oberliga Nordost",
+          "count": 1,
+          "years": [
+            "2006"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "2950": {
+      "qid": "Q105254",
+      "name": "Mainz",
+      "total": 0,
+      "trophies": []
+    },
+    "3307": {
+      "qid": "Q160532",
+      "name": "SC Paderborn 07",
+      "total": 0,
+      "trophies": []
+    },
+    "3841": {
+      "qid": "Q15755",
+      "name": "FC Augsburg",
+      "total": 5,
+      "trophies": [
+        {
+          "key": "autre:Q15735",
+          "label": "Fußball-Bayernliga",
+          "count": 5,
+          "years": [
+            "1973",
+            "1980",
+            "1982",
+            "1994",
+            "2002"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "7911": {
+      "qid": "Q22707",
+      "name": "TSG Hoffenheim",
+      "total": 0,
+      "trophies": []
+    },
+    "11420": {
+      "qid": "Q702455",
+      "name": "RB Leipzig",
+      "total": 3,
+      "trophies": [
+        {
+          "key": "coupe",
+          "label": "Coupe d'Allemagne",
+          "count": 2,
+          "years": [
+            "2022",
+            "2023"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "autre:Q548937",
+          "label": "Regionalliga Nord-Est",
+          "count": 1,
+          "years": [
+            "2013"
+          ],
+          "scope": "autre"
+        }
+      ]
+    }
+  }
+}
