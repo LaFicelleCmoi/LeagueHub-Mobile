@@ -1,6 +1,11 @@
 package com.leaguehub.android.app.navigation
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.BorderStroke
 import com.leaguehub.android.ui.components.LeagueChip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
@@ -30,11 +35,9 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsSoccer
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -109,7 +112,8 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
+            // L'accueil dessine son propre grand en-tête.
+            if (pattern != Routes.HOME) TopAppBar(
                 title = {
                     val slug = entry?.arguments?.getString("slug")
                     Text(
@@ -122,7 +126,7 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
                             Routes.MATCH -> stringResource(R.string.match)
                             else -> stringResource(R.string.app_name)
                         },
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.headlineSmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -135,7 +139,7 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
             )
         },
         bottomBar = {
-            if (isTopLevel) NavigationBar {
+            if (isTopLevel) FloatingNavBar {
                 topLevel.forEach { item ->
                     PillNavItem(
                         item = item,
@@ -216,17 +220,17 @@ private fun LeagueChips(selected: String, onSelect: (LeagueConfig) -> Unit) {
 @Composable
 private fun RowScope.PillNavItem(item: TopLevel, selected: Boolean, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    val content = if (selected) colors.onSecondaryContainer else colors.onSurfaceVariant
+    val content = if (selected) colors.onPrimary else colors.onSurfaceVariant
     Box(
         // Hauteur fixe : un fillMaxHeight étirerait la barre sur tout l'écran.
-        Modifier.weight(1f).height(64.dp)
+        Modifier.weight(1f).height(60.dp)
             .selectable(selected = selected, onClick = onClick, role = Role.Tab),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             Modifier.fillMaxWidth().padding(horizontal = 2.dp)
                 .clip(RoundedCornerShape(50))
-                .background(if (selected) colors.secondaryContainer else Color.Transparent)
+                .background(if (selected) colors.primary else Color.Transparent)
                 .padding(horizontal = 2.dp, vertical = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -240,6 +244,21 @@ private fun RowScope.PillNavItem(item: TopLevel, selected: Boolean, onClick: () 
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+        }
+    }
+}
+
+/** Barre de navigation flottante : pilule arrondie détachée des bords, au-dessus de la barre système. */
+@Composable
+private fun FloatingNavBar(content: @Composable RowScope.() -> Unit) {
+    Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp)) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            shadowElevation = 8.dp,
+        ) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically, content = content)
         }
     }
 }
