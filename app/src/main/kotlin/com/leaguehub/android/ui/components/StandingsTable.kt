@@ -46,7 +46,12 @@ data class TableLine(
     /** Mouvement par rapport au classement officiel (> 0 : monte). */
     val movement: Int = 0,
     val live: Boolean = false,
+    /** Adversaire du match en cours : son logo remplace le simple point rouge. */
+    val liveOpponent: LiveOpponent? = null,
 )
+
+/** Match en cours vu du classement : logo adverse et score de notre point de vue (« 2-1 »). */
+data class LiveOpponent(val logo: String?, val score: String)
 
 @Composable
 fun StandingsHeader(modifier: Modifier = Modifier) {
@@ -105,7 +110,21 @@ fun StandingLine(line: TableLine, favoriteId: String?, onClick: () -> Unit, modi
             }
             if (line.live) {
                 Spacer(Modifier.width(6.dp))
-                LiveDot()
+                val opp = line.liveOpponent
+                if (opp == null) {
+                    LiveDot()
+                } else {
+                    // Pastille « 2-1 [logo] » rouge : on voit contre qui et où en est le match.
+                    Row(
+                        Modifier.clip(RoundedCornerShape(50)).background(sport.live.copy(alpha = 0.14f))
+                            .padding(start = 6.dp, end = 3.dp, top = 2.dp, bottom = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(opp.score, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = sport.live)
+                        Spacer(Modifier.width(4.dp))
+                        TeamLogo(opp.logo, size = 16.dp)
+                    }
+                }
             }
         }
         Cell(line.played.toString())
