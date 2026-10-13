@@ -250,6 +250,13 @@ data class ClubPalmares(
 
 /** Club favori, mémorisé sur l'appareil. */
 @Serializable
+data class FollowedClub(
+    val club: FavoriteClub,
+    val notifyKickoff: Boolean = true,
+    val notifyGoals: Boolean = true,
+)
+
+@Serializable
 data class FavoriteClub(
     val teamId: String,
     val name: String,
