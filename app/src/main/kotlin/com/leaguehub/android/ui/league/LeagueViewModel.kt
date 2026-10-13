@@ -109,6 +109,9 @@ class LeagueViewModel @Inject constructor(
 
     private val _leaders = MutableStateFlow<Remote<Leaders>>(Remote.Loading)
     val leaders = _leaders.asStateFlow()
+    private val _season = MutableStateFlow<Remote<List<Match>>>(Remote.Loading)
+    /** Résultats de toute la saison (onglet Saison), chargés à la demande. */
+    val season = _season.asStateFlow()
     private val _news = MutableStateFlow<Remote<List<Article>>>(Remote.Loading)
     val news = _news.asStateFlow()
 
@@ -132,6 +135,14 @@ class LeagueViewModel @Inject constructor(
         viewModelScope.launch {
             _leaders.value = Remote.Loading
             _leaders.value = runCatching { repo.leaders(league) }.fold({ Remote.Ready(it) }, { Remote.Failed })
+        }
+    }
+
+    fun loadSeason(force: Boolean = false) {
+        if (!force && _season.value is Remote.Ready) return
+        viewModelScope.launch {
+            _season.value = Remote.Loading
+            _season.value = runCatching { repo.seasonMatches(league) }.fold({ Remote.Ready(it) }, { Remote.Failed })
         }
     }
 
