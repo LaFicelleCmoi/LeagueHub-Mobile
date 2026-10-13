@@ -34,7 +34,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -65,6 +65,8 @@ import com.leaguehub.android.core.util.parisDay
 import com.leaguehub.android.domain.model.Leader
 import com.leaguehub.android.domain.model.Match
 import com.leaguehub.android.domain.model.MatchState
+import com.leaguehub.android.domain.model.Side
+import com.leaguehub.android.ui.components.LiveOpponent
 import com.leaguehub.android.domain.model.ZoneTone
 import com.leaguehub.android.ui.components.EmptyState
 import com.leaguehub.android.ui.components.ErrorState
@@ -86,11 +88,11 @@ fun LeagueScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableIntStateOf(0) }
-    val tabs = listOf(R.string.tab_standings, R.string.tab_matches, R.string.tab_scorers, R.string.tab_news)
+    val tabs = listOf(R.string.tab_standings, R.string.tab_season, R.string.tab_matches, R.string.tab_scorers, R.string.tab_news)
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
-            PrimaryTabRow(selectedTabIndex = tab) {
+            PrimaryScrollableTabRow(selectedTabIndex = tab, edgePadding = 8.dp) {
                 tabs.forEachIndexed { i, label ->
                     Tab(selected = tab == i, onClick = { tab = i }, text = { Text(stringResource(label), maxLines = 1) })
                 }
@@ -102,15 +104,17 @@ fun LeagueScreen(
                 isRefreshing = state.refreshing,
                 onRefresh = {
                     viewModel.refresh()
-                    if (tab == 2) viewModel.loadLeaders(force = true)
-                    if (tab == 3) viewModel.loadNews(force = true)
+                    if (tab == 1) viewModel.loadSeason(force = true)
+                    if (tab == 3) viewModel.loadLeaders(force = true)
+                    if (tab == 4) viewModel.loadNews(force = true)
                 },
                 modifier = Modifier.fillMaxSize(),
             ) {
                 when (tab) {
                     0 -> StandingsTab(state, onTeam, viewModel::refresh)
-                    1 -> MatchesTab(state, onMatch)
-                    2 -> ScorersTab(viewModel, onTeam)
+                    1 -> SeasonTab(state, viewModel)
+                    2 -> MatchesTab(state, onMatch)
+                    3 -> ScorersTab(viewModel, onTeam)
                     else -> NewsTab(viewModel)
                 }
             }
@@ -160,6 +164,10 @@ private fun StandingsTab(state: LeagueUiState, onTeam: (String) -> Unit, retry: 
                         zoneColor = r.row.zone?.let { zoneColor(it.tone).copy(alpha = if (it.qualifying) 0.5f else 1f) },
                         movement = if (live.provisional) r.movement else 0,
                         live = r.live?.match?.state == MatchState.IN,
+                        liveOpponent = r.live?.takeIf { it.match.state == MatchState.IN }?.let { l ->
+                            val them = l.match.side(if (l.side == Side.HOME) Side.AWAY else Side.HOME)
+                            LiveOpponent(them.team.logo, "${l.match.side(l.side).score ?: 0}-${them.score ?: 0}")
+                        },
                     ),
                     favoriteId = state.favoriteId,
                     onClick = { onTeam(r.row.team.id) },
