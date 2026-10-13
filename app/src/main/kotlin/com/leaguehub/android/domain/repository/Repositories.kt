@@ -29,6 +29,8 @@ interface FootballRepository {
     /** Matchs d'hier et d'aujourd'hui, lus en direct (et recopiés en base). */
     suspend fun liveMatches(league: LeagueConfig): List<Match>
 
+    /** Tous les matchs de la saison en cours (août → aujourd'hui), pour l'évolution au classement. */
+    suspend fun seasonMatches(league: LeagueConfig): Cached<List<Match>>
     suspend fun leaders(league: LeagueConfig): Cached<Leaders>
     suspend fun news(league: LeagueConfig): Cached<List<Article>>
 
