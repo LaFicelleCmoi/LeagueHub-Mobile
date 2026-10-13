@@ -72,7 +72,7 @@ Comme sur le web, **le seul paramètre qui change la compétition est le slug ES
 
 ```
 app/src/main/kotlin/com/leaguehub/android/
-├── app/                    Application, Hilt, navigation Compose
+├── app/                    Application, Hilt (di/), navigation Compose, WorkManager (work/), notifications
 ├── core/
 │   ├── i18n/               FR/EN
 │   ├── theme/              Clair / sombre / système
@@ -83,18 +83,23 @@ app/src/main/kotlin/com/leaguehub/android/
 │   ├── standings/          RankLeaguePhase.kt — moteur de classement UEFA (pur, testé)
 │   ├── live/               Règles du suivi en direct (quels matchs, quand)
 │   ├── schedule/           Prochain coup d'envoi, comptes à rebours
-│   └── simulation/         Simulateur What-If
-├── data/
+│   ├── simulation/         Simulateur What-If
+│   ├── knockout/           Phase finale : tours, confrontations aller-retour
+│   └── repository/         Interfaces des repositories (implémentées dans data/)
+├── data/                   FootballRepositoryImpl : repository unique, offline-first
 │   ├── espn/               Retrofit + mappers JSON ESPN → domaine
 │   ├── ldc/                Tirage 2026, coefficients UEFA
 │   ├── db/                 Room : classements, calendrier, résultats
 │   └── settings/           DataStore : thème, club favori, langue
+├── widget/                 Widget Glance : prochain match du club favori
 └── ui/
     ├── home/               Accueil : chiffres clés, mon club, matchs du jour
     ├── league/             Classement, matchs, buteurs (paramétré par LeagueConfig)
     ├── ldctracker/         Phase de ligue, phase finale, simulateur
     ├── club/               Fiche club : forme, palmarès, saison
     ├── matchdetail/        Chronologie, stats comparées, compositions
+    ├── search/             Recherche de club
+    ├── settings/           Thème, langue, club favori, notifications
     └── components/         Cartes de match, ligne de classement, compte à rebours, badge forme
 ```
 
@@ -137,11 +142,11 @@ Aucune variable d'environnement n'est nécessaire : l'API ESPN est publique.
 ## Feuille de route
 
 - [x] Moteur de classement UEFA porté et testé
-- [ ] Les 5 championnats : classements, matchs, direct
-- [ ] Tracker LDC : phase de ligue, simulateur, tirage
-- [ ] Fiche club : forme, palmarès, saison
-- [ ] Widgets Glance et notifications
-- [ ] Thème aux couleurs du club favori
+- [x] Les 5 championnats : classements, matchs, direct
+- [x] Tracker LDC : phase de ligue, simulateur, tirage
+- [x] Fiche club : forme, palmarès, saison
+- [x] Widgets Glance et notifications
+- [x] Thème aux couleurs du club favori
 
 ---
 
