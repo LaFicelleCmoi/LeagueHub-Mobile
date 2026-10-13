@@ -234,6 +234,7 @@
     <string name="widget_today_title">Matchs du jour</string>
     <string name="widget_today_description">Direct, à venir et résultats des 6 compétitions</string>
     <string name="widget_today_empty">Aucun match aujourd\'hui</string>
+    <string name="widget_today_error">Impossible de charger les matchs. Touchez ↻ pour réessayer.</string>
     <string name="widget_live_count">%1$d en direct</string>
     <string name="loading_short">Chargement…</string>
     <string name="widget_description">Prochain match de votre club favori</string>
