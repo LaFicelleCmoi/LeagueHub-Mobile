@@ -23,7 +23,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.leaguehub.android.R
+import com.leaguehub.android.core.theme.Condensed
 import com.leaguehub.android.core.theme.LocalSportColors
 import com.leaguehub.android.core.util.formatTime
 import com.leaguehub.android.domain.model.Match
@@ -142,6 +144,8 @@ private fun SideRow(side: MatchSide, favoriteId: String?, state: MatchState) {
             Text(
                 side.score.toString() + (side.shootout?.let { " ($it)" } ?: ""),
                 fontWeight = FontWeight.Bold,
+                fontFamily = Condensed,
+                fontSize = 18.sp,
                 color = if (state == MatchState.IN) LocalSportColors.current.live else MaterialTheme.colorScheme.onSurface,
             )
         }
@@ -177,11 +181,12 @@ fun CompactMatchRow(
                 if (live) { LiveDot(); Spacer(Modifier.width(4.dp)) }
                 Text(
                     statusLabel(match),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontFamily = Condensed,
+                    fontWeight = FontWeight.Bold,
                     color = when {
                         live -> LocalSportColors.current.live
-                        match.state == MatchState.PRE -> MaterialTheme.colorScheme.onSurface
+                        match.state == MatchState.PRE -> LocalSportColors.current.accent
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     },
                     maxLines = 1,
