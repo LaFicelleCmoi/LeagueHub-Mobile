@@ -142,6 +142,13 @@
     <string name="draw_legend">⌂ home · ✈ away. Dates filled in as soon as ESPN publishes the schedule.</string>
     <string name="date_tbd">Date TBC</string>
 
+    <string name="follow_club">Follow this club</string>
+    <string name="unfollow_club">Unfollow this club</string>
+    <string name="followed_clubs">Followed clubs</string>
+    <string name="followed_empty">Follow more clubs with the bell on their page: their matches and notifications on top of your favourite.</string>
+    <string name="add_club">Add a club</string>
+    <string name="notif_kickoff_short">Kick-off</string>
+    <string name="notif_goals_short">Goals</string>
     <string name="set_favorite">Set as favourite club</string>
     <string name="unset_favorite">Remove from favourites</string>
     <string name="favorite_club">Favourite club</string>
@@ -207,5 +214,10 @@
     <string name="widget_in_days">In %1$d days</string>
     <string name="widget_home">Home</string>
     <string name="widget_away">Away</string>
+    <string name="widget_today_title">Today\'s matches</string>
+    <string name="widget_today_description">Live, upcoming and results across the 6 competitions</string>
+    <string name="widget_today_empty">No match today</string>
+    <string name="widget_live_count">%1$d live</string>
+    <string name="loading_short">Loading…</string>
     <string name="widget_description">Your favourite club\'s next match</string>
 </resources>
