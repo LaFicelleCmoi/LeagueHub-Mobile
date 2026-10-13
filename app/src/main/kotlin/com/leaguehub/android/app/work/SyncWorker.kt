@@ -1,16 +1,10 @@
 package com.leaguehub.android.app.work
 
-import java.time.LocalDate
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.async
 import com.leaguehub.android.widget.TodayWidgetState
 import com.leaguehub.android.widget.TodayMatchesWidget
-import com.leaguehub.android.domain.schedule.PARIS
 import com.leaguehub.android.domain.model.TeamForm
 import com.leaguehub.android.domain.model.FavoriteClub
 import com.leaguehub.android.domain.leagueconfig.LeagueConfig
-import com.leaguehub.android.core.util.parisDay
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import android.content.SharedPreferences
 import android.content.Context
@@ -152,16 +146,9 @@ class SyncWorker @AssistedInject constructor(
     private suspend fun refreshTodayWidget(): Boolean {
         val ids = GlanceAppWidgetManager(applicationContext).getGlanceIds(TodayMatchesWidget::class.java)
         if (ids.isEmpty()) return false
-        val today = LocalDate.now(PARIS)
-        val fetched = coroutineScope {
-            Competitions.ALL.map { league -> async { league to runCatching { football.liveMatches(league) }.getOrNull() } }.awaitAll()
-        }
-        // Tout a échoué (réseau) : on garde l'affichage précédent plutôt qu'une liste vide trompeuse.
-        if (fetched.all { it.second == null }) return false
-        val matches = fetched.flatMap { (league, list) -> list.orEmpty().filter { parisDay(it.kickoff) == today }.map { league to it } }
-        TodayWidgetState.save(applicationContext, matches)
+        val live = TodayWidgetState.refresh(applicationContext, football) ?: return false
         TodayMatchesWidget().updateAll(applicationContext)
-        return matches.any { it.second.state == MatchState.IN }
+        return live
     }
 
     companion object {
@@ -198,7 +185,8 @@ class SyncWorker @AssistedInject constructor(
             val request = OneTimeWorkRequestBuilder<SyncWorker>()
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                 .build()
-            WorkManager.getInstance(context).enqueueUniqueWork(NAME_NOW, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
+            // REPLACE : une demande immédiate ne doit jamais attendre derrière une synchro en échec (backoff).
+            WorkManager.getInstance(context).enqueueUniqueWork(NAME_NOW, ExistingWorkPolicy.REPLACE, request)
         }
 
         fun schedule(context: Context) {
