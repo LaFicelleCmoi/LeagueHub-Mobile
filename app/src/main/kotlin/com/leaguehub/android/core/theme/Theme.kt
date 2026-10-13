@@ -7,6 +7,10 @@ import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.DeviceFontFamilyName
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.darkColorScheme
@@ -23,64 +27,79 @@ import com.leaguehub.android.domain.standings.PhaseZone
 
 // Couleurs partagées par toute l'app (portage de `standings-style.ts`).
 
-private val Brand = Color(0xFF2563EB)
+/** Vert citron « jour de match » : l'accent de toute l'app. */
+private val Lime = Color(0xFFC6F432)
+private val LimeDeep = Color(0xFF4D7C0F) // version lisible sur fond clair
 
 // Palette M3 complète : les cartes utilisent surfaceContainer, un cran au-dessus du fond.
 private val LightColors = lightColorScheme(
-    primary = Brand,
+    primary = LimeDeep,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFDBEAFE),
-    onPrimaryContainer = Color(0xFF1E3A8A),
+    primaryContainer = Color(0xFFE4F7B5),
+    onPrimaryContainer = Color(0xFF2D4A06),
     secondary = Color(0xFF0F766E),
-    secondaryContainer = Color(0xFFDBEAFE),
-    onSecondaryContainer = Color(0xFF1E3A8A),
-    background = Color(0xFFF3F5F9),
-    onBackground = Color(0xFF0F172A),
-    surface = Color(0xFFF3F5F9),
-    onSurface = Color(0xFF0F172A),
-    surfaceVariant = Color(0xFFEAEFF5),
-    onSurfaceVariant = Color(0xFF526073),
+    secondaryContainer = Color(0xFFE4F7B5),
+    onSecondaryContainer = Color(0xFF2D4A06),
+    background = Color(0xFFF4F5F0),
+    onBackground = Color(0xFF111312),
+    surface = Color(0xFFF4F5F0),
+    onSurface = Color(0xFF111312),
+    surfaceVariant = Color(0xFFE9EBE3),
+    onSurfaceVariant = Color(0xFF5B6157),
     surfaceContainerLowest = Color.White,
-    surfaceContainerLow = Color(0xFFF8FAFC),
+    surfaceContainerLow = Color(0xFFFAFBF7),
     surfaceContainer = Color.White,
-    surfaceContainerHigh = Color(0xFFEEF2F7),
-    surfaceContainerHighest = Color(0xFFE2E8F0),
-    outline = Color(0xFF94A3B8),
-    outlineVariant = Color(0xFFE2E8F0),
+    surfaceContainerHigh = Color(0xFFEDEFE7),
+    surfaceContainerHighest = Color(0xFFE2E5DA),
+    outline = Color(0xFF9AA093),
+    outlineVariant = Color(0xFFE2E5DA),
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFF60A5FA),
-    onPrimary = Color(0xFF0B1220),
-    primaryContainer = Color(0xFF1E3A8A),
-    onPrimaryContainer = Color(0xFFDBEAFE),
+    primary = Lime,
+    onPrimary = Color(0xFF0A0B0F),
+    primaryContainer = Color(0xFF2C3A10),
+    onPrimaryContainer = Color(0xFFE4FBA0),
     secondary = Color(0xFF2DD4BF),
-    secondaryContainer = Color(0xFF1F3354),
-    onSecondaryContainer = Color(0xFFDBEAFE),
-    background = Color(0xFF0B1120),
-    onBackground = Color(0xFFE5E9F0),
-    surface = Color(0xFF0B1120),
-    onSurface = Color(0xFFE5E9F0),
-    surfaceVariant = Color(0xFF1E293B),
-    onSurfaceVariant = Color(0xFF94A3B8),
-    surfaceContainerLowest = Color(0xFF070B16),
-    surfaceContainerLow = Color(0xFF0F172A),
-    surfaceContainer = Color(0xFF131C2E),
-    surfaceContainerHigh = Color(0xFF1A2438),
-    surfaceContainerHighest = Color(0xFF222D44),
-    outline = Color(0xFF475569),
-    // Bordure des cartes : visible sur le fond sombre sans être appuyée.
-    outlineVariant = Color(0xFF243049),
+    secondaryContainer = Color(0xFF2C3A10),
+    onSecondaryContainer = Color(0xFFE4FBA0),
+    background = Color(0xFF0A0B0F),
+    onBackground = Color(0xFFF1F2F4),
+    surface = Color(0xFF0A0B0F),
+    onSurface = Color(0xFFF1F2F4),
+    surfaceVariant = Color(0xFF1C1E26),
+    onSurfaceVariant = Color(0xFF9097A3),
+    surfaceContainerLowest = Color(0xFF050608),
+    surfaceContainerLow = Color(0xFF101117),
+    surfaceContainer = Color(0xFF14161D),
+    surfaceContainerHigh = Color(0xFF1C1E27),
+    surfaceContainerHighest = Color(0xFF252833),
+    outline = Color(0xFF4A4F5C),
+    // Bordure des cartes : visible sur le fond quasi noir sans être appuyée.
+    outlineVariant = Color(0xFF23262F),
+)
+
+/**
+ * Police condensée du système (Roboto Condensed sur Android), pour les scores, heures et titres :
+ * le côté « tableau d'affichage » des apps de sport, sans embarquer de fichier de police.
+ */
+val Condensed: FontFamily = FontFamily(
+    Font(DeviceFontFamilyName("sans-serif-condensed"), FontWeight.Normal),
+    Font(DeviceFontFamilyName("sans-serif-condensed"), FontWeight.Bold),
+    Font(DeviceFontFamilyName("sans-serif-condensed"), FontWeight.Black),
+    Font(DeviceFontFamilyName("sans-serif-condensed"), FontWeight.Bold, FontStyle.Italic),
 )
 
 /** Typographie : titres plus gras et plus serrés, corps inchangé. */
 private val AppTypography = Typography().run {
     copy(
-        displaySmall = displaySmall.copy(fontWeight = FontWeight.Bold),
-        headlineLarge = headlineLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
-        headlineMedium = headlineMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.25).sp),
-        headlineSmall = headlineSmall.copy(fontWeight = FontWeight.Bold),
-        titleLarge = titleLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.2).sp),
+        displayLarge = displayLarge.copy(fontFamily = Condensed, fontWeight = FontWeight.Black),
+        displayMedium = displayMedium.copy(fontFamily = Condensed, fontWeight = FontWeight.Black),
+        displaySmall = displaySmall.copy(fontFamily = Condensed, fontWeight = FontWeight.Black),
+        headlineLarge = headlineLarge.copy(fontFamily = Condensed, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp),
+        headlineMedium = headlineMedium.copy(fontFamily = Condensed, fontWeight = FontWeight.Black, letterSpacing = (-0.25).sp),
+        headlineSmall = headlineSmall.copy(fontFamily = Condensed, fontWeight = FontWeight.Bold),
+        titleLarge = titleLarge.copy(fontFamily = Condensed, fontWeight = FontWeight.Bold, fontSize = 24.sp),
         titleMedium = titleMedium.copy(fontWeight = FontWeight.SemiBold),
         titleSmall = titleSmall.copy(fontWeight = FontWeight.SemiBold),
         labelLarge = labelLarge.copy(fontWeight = FontWeight.SemiBold),
@@ -115,12 +134,12 @@ private val LightSport = SportColors(
     win = Color(0xFF16A34A), draw = Color(0xFF94A3B8), loss = Color(0xFFDC2626), live = Color(0xFFDC2626),
     favorite = Color(0xFFEAB308), soon = Color(0xFFD97706), imminent = Color(0xFFDC2626),
     positive = Color(0xFF059669), negative = Color(0xFFDC2626),
-    accent = Color(0xFFB45309), // ambre foncé : un jaune pur serait illisible sur fond clair
+    accent = Color(0xFF4D7C0F), // vert citron foncé : la version vive serait illisible sur fond clair
 )
 
 private val DarkSport = LightSport.copy(
     positive = Color(0xFF34D399), negative = Color(0xFFF87171), soon = Color(0xFFFBBF24), imminent = Color(0xFFF87171),
-    accent = Color(0xFFFACC15),
+    accent = Color(0xFFC6F432),
 )
 
 val LocalSportColors = staticCompositionLocalOf { LightSport }
