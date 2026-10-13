@@ -41,6 +41,8 @@ data class HomeUiState(
     val figures: KeyFigures = KeyFigures(0, 0, 0),
     val favorite: FavoriteClub? = null,
     val favoriteForm: TeamForm? = null,
+    /** Clubs suivis (hors favori) et leur fiche ; null tant qu'elle n'est pas chargée. */
+    val followed: List<Pair<FavoriteClub, TeamForm?>> = emptyList(),
 )
 
 @HiltViewModel
@@ -86,7 +88,29 @@ class HomeViewModel @Inject constructor(
         ).map { (it as? PollResult.Success)?.value }
     }
 
-    val state: StateFlow<HomeUiState> = combine(calendars, favorite, favoriteForm, live) { cals, fav, form, _ ->
+    /** Fiches des clubs suivis, relues toutes les minutes pendant leurs matchs, toutes les 10 min sinon. */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val followedForms = settings.settings
+        .map { s -> s.followed.map { it.club }.filter { it.teamId != s.favorite?.teamId } }
+        .distinctUntilChanged()
+        .flatMapLatest { clubs ->
+            if (clubs.isEmpty()) flowOf(emptyList())
+            else pollingFlow(
+                delayFor = { forms: List<Pair<FavoriteClub, TeamForm?>>, now ->
+                    val busy = forms.any { (_, f) -> f?.live != null || (f?.next != null && f.next.kickoff - now <= 15 * 60_000) }
+                    if (busy) 60_000L else 10 * 60_000L
+                },
+                fetch = {
+                    coroutineScope {
+                        clubs.map { c ->
+                            async { c to runCatching { repo.teamForm(c.teamId, Competitions.bySlug(c.competition) ?: Competitions.UCL) }.getOrNull() }
+                        }.awaitAll()
+                    }
+                },
+            ).map { (it as? PollResult.Success)?.value ?: clubs.map { c -> c to null } }
+        }
+
+    val state: StateFlow<HomeUiState> = combine(calendars, favorite, favoriteForm, live, followedForms) { cals, fav, form, _, followed ->
         val today = LocalDate.now(com.leaguehub.android.domain.schedule.PARIS)
         val todays = cals.map { (league, matches) -> league to matches.filter { parisDay(it.kickoff) == today } }
             .filter { it.second.isNotEmpty() }
@@ -100,6 +124,7 @@ class HomeViewModel @Inject constructor(
             ),
             favorite = fav,
             favoriteForm = form?.takeIf { fav != null && it.team.id == fav.teamId },
+            followed = followed,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
