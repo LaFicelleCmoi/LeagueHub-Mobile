@@ -217,6 +217,7 @@
     <string name="widget_today_title">Today\'s matches</string>
     <string name="widget_today_description">Live, upcoming and results across the 6 competitions</string>
     <string name="widget_today_empty">No match today</string>
+    <string name="widget_today_error">Couldn\'t load matches. Tap ↻ to retry.</string>
     <string name="widget_live_count">%1$d live</string>
     <string name="loading_short">Loading…</string>
     <string name="widget_description">Your favourite club\'s next match</string>
