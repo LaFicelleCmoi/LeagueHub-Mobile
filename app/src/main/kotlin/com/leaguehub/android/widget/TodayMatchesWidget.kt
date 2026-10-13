@@ -1,5 +1,7 @@
 package com.leaguehub.android.widget
 
+import com.leaguehub.android.core.util.formatDay
+import android.content.res.Configuration
 import java.time.LocalDate
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.sync.withLock
@@ -132,7 +134,9 @@ object TodayWidgetState {
 
     private fun dir(context: Context, kind: String) = File(File(context.filesDir, "widget"), kind).apply { mkdirs() }
     fun teamLogo(context: Context, id: String) = File(dir(context, "teams"), "$id.png")
-    fun leagueLogo(context: Context, slug: String) = File(dir(context, "leagues"), "$slug.png")
+    /** Logo de compétition : version pour fond sombre ([dark]) ou clair. */
+    fun leagueLogo(context: Context, slug: String, dark: Boolean = true) =
+        File(dir(context, "leagues"), if (dark) "$slug.png" else "$slug-light.png")
 
     private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -171,7 +175,8 @@ object TodayWidgetState {
             coroutineScope {
                 ordered.flatMap { (league, m) ->
                     listOf(
-                        league.logo(dark = true) to leagueLogo(context, league.slug),
+                        league.logo(dark = true) to leagueLogo(context, league.slug, dark = true),
+                        league.logo(dark = false) to leagueLogo(context, league.slug, dark = false),
                         m.home.team.logo to teamLogo(context, m.home.team.id),
                         m.away.team.logo to teamLogo(context, m.away.team.id),
                     )
@@ -221,6 +226,9 @@ private val Live = ColorProvider(day = Color(0xFFDC2626), night = Color(0xFFF871
 private val Border = ColorProvider(day = Color.Black.copy(alpha = 0.08f), night = Color.White.copy(alpha = 0.1f))
 private val Secondary = ColorProvider(day = Color(0xFF475569), night = Color.White.copy(alpha = 0.8f))
 private val LivePill = ColorProvider(day = Color(0x1FDC2626), night = Color(0x33F87171))
+/** Fond des cartes de match : à peine plus clair (nuit) ou plus sombre (jour) que le widget. */
+private val Card = ColorProvider(day = Color(0x0A000000), night = Color(0x0FFFFFFF))
+private val LiveCard = ColorProvider(day = Color(0x14DC2626), night = Color(0x1FF87171))
 
 /** Bouton ↻ : recharge tout de suite, sans passer par la file de la synchro. */
 class RefreshTodayAction : ActionCallback {
@@ -258,10 +266,11 @@ class TodayMatchesWidget : GlanceAppWidget() {
     private fun buildRows(context: Context, items: List<TodayItem>): List<Row3> {
         val logos = HashMap<String, Bitmap?>()
         fun logo(file: File): Bitmap? = logos.getOrPut(file.path) { file.takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path) } }
+        val night = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         return items.map { item ->
             Row3(
                 item,
-                logo(TodayWidgetState.leagueLogo(context, item.leagueSlug)),
+                logo(TodayWidgetState.leagueLogo(context, item.leagueSlug, dark = night)),
                 logo(TodayWidgetState.teamLogo(context, item.homeId)),
                 logo(TodayWidgetState.teamLogo(context, item.awayId)),
             )
@@ -271,6 +280,36 @@ class TodayMatchesWidget : GlanceAppWidget() {
     /** Une ligne prête à dessiner : le match et ses trois logos. */
     private data class Row3(val item: TodayItem, val league: Bitmap?, val home: Bitmap?, val away: Bitmap?)
 
+    /** Ce que la liste affiche : un en-tête de compétition ou un match. */
+    private sealed interface Entry {
+        val key: Long
+        data class Section(val slug: String, val logo: Bitmap?, val count: Int, val live: Int) : Entry {
+            override val key: Long get() = ("s$slug").hashCode().toLong()
+        }
+        data class Game(val row: Row3) : Entry {
+            override val key: Long get() = row.item.id.toLongOrNull() ?: row.item.id.hashCode().toLong()
+        }
+    }
+
+    /**
+     * Tailles calculées pour remplir le widget : peu de matchs = grandes lignes aérées,
+     * beaucoup = lignes compactes et liste qui défile. Tient compte de la police système.
+     */
+    private class ListMetrics(height: Float, private val fontScale: Float, sections: Int, games: Int) {
+        private fun line(sp: Float) = sp * 1.3f * fontScale
+        val headerH = line(16f) + line(11f) + 10f
+        val sectionH = maxOf(20f, line(12f)) + 14f
+        private val avail = height - 2f - 16f - headerH
+        val rowH: Float = if (games == 0) 48f else ((avail - sections * sectionH - games * GAP) / games).coerceIn(48f, 72f)
+        /** 0 pour la plus petite ligne, 1 pour la plus grande. */
+        private val t = (rowH - 48f) / 24f
+        val logo = (22f + 10f * t).dp
+        val nameSp = (13f + 2f * t).sp
+        val centerSp = (15f + 3f * t).sp
+
+        companion object { const val GAP = 4f }
+    }
+
     @Composable
     private fun Content(context: Context, rows: List<Row3>, loaded: Boolean, failed: Boolean, updatedAt: Long) {
         val size = LocalSize.current
@@ -279,9 +318,15 @@ class TodayMatchesWidget : GlanceAppWidget() {
         val singleLine = size.height.value - 2f - 16f < (13f + 14f) * 1.3f * fontScale + 24f
         val wide = size.width >= 300.dp
         val narrow = size.width < 200.dp
-        Box(GlanceModifier.fillMaxSize().cornerRadius(20.dp).background(Border).padding(1.dp)) {
+        // Groupes par compétition, dans l'ordre d'importance déjà calculé (direct, à venir, terminés).
+        val groups = rows.groupBy { it.item.leagueSlug }
+        val entries = groups.flatMap { (slug, list) ->
+            listOf(Entry.Section(slug, list.first().league, list.size, list.count { it.item.state == MatchState.IN })) + list.map { Entry.Game(it) }
+        }
+        val metrics = ListMetrics(size.height.value, fontScale, groups.size, rows.size)
+        Box(GlanceModifier.fillMaxSize().cornerRadius(24.dp).background(Border).padding(1.dp)) {
             Column(
-                GlanceModifier.fillMaxSize().cornerRadius(19.dp).background(GlanceTheme.colors.widgetBackground)
+                GlanceModifier.fillMaxSize().cornerRadius(23.dp).background(GlanceTheme.colors.widgetBackground)
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
                 if (!singleLine) Header(context, rows.count { it.item.state == MatchState.IN }, updatedAt.takeIf { loaded })
@@ -289,12 +334,15 @@ class TodayMatchesWidget : GlanceAppWidget() {
                     failed -> Message(context.getString(R.string.widget_today_error))
                     !loaded -> Message(context.getString(R.string.loading_short))
                     rows.isEmpty() -> Message(context.getString(R.string.widget_today_empty))
-                    singleLine -> MatchRow(context, rows.first(), wide = wide, narrow = narrow, extra = rows.size - 1)
+                    singleLine -> MatchRow(context, rows.first(), ListMetrics(48f + 60f, fontScale, 0, 1), wide = wide, narrow = narrow, extra = rows.size - 1)
                     else -> LazyColumn(GlanceModifier.fillMaxSize()) {
-                        items(rows, itemId = { it.item.id.toLongOrNull() ?: it.item.id.hashCode().toLong() }) { row ->
-                            Column {
-                                Spacer(GlanceModifier.height(6.dp))
-                                MatchRow(context, row, wide = wide, narrow = narrow, extra = 0)
+                        items(entries, itemId = { it.key }) { entry ->
+                            when (entry) {
+                                is Entry.Section -> SectionHeader(context, entry, metrics)
+                                is Entry.Game -> Column {
+                                    MatchRow(context, entry.row, metrics, wide = wide, narrow = narrow, extra = 0)
+                                    Spacer(GlanceModifier.height(ListMetrics.GAP.dp))
+                                }
                             }
                         }
                     }
@@ -303,21 +351,23 @@ class TodayMatchesWidget : GlanceAppWidget() {
         }
     }
 
-    /** En-tête : titre, pastille du nombre de matchs en direct, bouton de rafraîchissement. */
+    /** En-tête : titre et date, pastille du direct, heure de mise à jour, bouton ↻. */
     @Composable
     private fun Header(context: Context, live: Int, updatedAt: Long?) {
         Row(
-            GlanceModifier.fillMaxWidth().clickable(actionStartActivity<MainActivity>()),
+            GlanceModifier.fillMaxWidth().padding(start = 4.dp, bottom = 6.dp).clickable(actionStartActivity<MainActivity>()),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                context.getString(R.string.widget_today_title),
-                modifier = GlanceModifier.defaultWeight(),
-                style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Bold),
-                maxLines = 1,
-            )
+            Column(GlanceModifier.defaultWeight()) {
+                Text(
+                    context.getString(R.string.widget_today_title),
+                    style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                )
+                Text(formatDay(LocalDate.now(PARIS)), style = TextStyle(color = Secondary, fontSize = 11.sp), maxLines = 1)
+            }
             if (live > 0) {
-                Box(GlanceModifier.cornerRadius(10.dp).background(LivePill).padding(horizontal = 8.dp, vertical = 2.dp)) {
+                Box(GlanceModifier.cornerRadius(10.dp).background(LivePill).padding(horizontal = 8.dp, vertical = 3.dp)) {
                     Text(
                         "● " + context.getString(R.string.widget_live_count, live),
                         style = TextStyle(color = Live, fontSize = 11.sp, fontWeight = FontWeight.Bold),
@@ -328,47 +378,88 @@ class TodayMatchesWidget : GlanceAppWidget() {
             // Heure de la dernière mise à jour : on voit tout de suite si c'est frais.
             updatedAt?.let {
                 Text(formatTime(it), style = TextStyle(color = Secondary, fontSize = 10.sp))
-                Spacer(GlanceModifier.width(6.dp))
+                Spacer(GlanceModifier.width(4.dp))
             }
-            Image(
-                ImageProvider(R.drawable.ic_widget_refresh),
-                contentDescription = context.getString(R.string.retry),
-                modifier = GlanceModifier.size(20.dp).clickable(actionRunCallback<RefreshTodayAction>()),
-                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
+            Box(
+                GlanceModifier.size(32.dp).cornerRadius(16.dp).clickable(actionRunCallback<RefreshTodayAction>()),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    ImageProvider(R.drawable.ic_widget_refresh),
+                    contentDescription = context.getString(R.string.retry),
+                    modifier = GlanceModifier.size(20.dp),
+                    colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
+                )
+            }
+        }
+    }
+
+    /** En-tête de compétition : logo lisible, nom, nombre de matchs (et en direct). */
+    @Composable
+    private fun SectionHeader(context: Context, section: Entry.Section, m: ListMetrics) {
+        val name = Competitions.bySlug(section.slug)?.name ?: section.slug
+        Row(
+            GlanceModifier.fillMaxWidth().height(m.sectionH.dp).padding(start = 4.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            section.logo?.let { Logo(it, 20.dp); Spacer(GlanceModifier.width(8.dp)) }
+            Text(
+                name.uppercase(),
+                modifier = GlanceModifier.defaultWeight(),
+                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 11.sp, fontWeight = FontWeight.Bold),
+                maxLines = 1,
             )
+            if (section.live > 0) {
+                Text("● ${section.live}  ", style = TextStyle(color = Live, fontSize = 11.sp, fontWeight = FontWeight.Bold))
+            }
+            Text(section.count.toString(), style = TextStyle(color = Secondary, fontSize = 11.sp, fontWeight = FontWeight.Bold))
         }
     }
 
     /**
-     * Ligne de match : [ligue] logo + nom domicile | score ou heure | nom + logo extérieur.
-     * Étroit : abréviations ; large : noms courts et logo de la compétition.
+     * Carte de match : nom + logo domicile | score ou heure | logo + nom extérieur.
+     * Étroit : abréviations ; sinon noms courts. En direct, la carte prend une teinte rouge.
      */
     @Composable
-    private fun MatchRow(context: Context, row: Row3, wide: Boolean, narrow: Boolean, extra: Int) {
-        val m = row.item
-        val logoSize: Dp = if (narrow) 16.dp else 20.dp
-        val nameStyle = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = if (narrow) 12.sp else 13.sp, fontWeight = FontWeight.Medium)
-        val deepLink = Intent(Intent.ACTION_VIEW, Uri.parse("leaguehub://match/${m.competition}/${m.id}"))
+    private fun MatchRow(context: Context, row: Row3, m: ListMetrics, wide: Boolean, narrow: Boolean, extra: Int) {
+        val g = row.item
+        val homeWins = g.state == MatchState.POST && (g.homeScore ?: 0) > (g.awayScore ?: 0)
+        val awayWins = g.state == MatchState.POST && (g.awayScore ?: 0) > (g.homeScore ?: 0)
+        val ink = GlanceTheme.colors.onSurface
+        fun nameStyle(winner: Boolean, align: TextAlign) = TextStyle(
+            color = if (g.state == MatchState.POST && !winner) Secondary else ink,
+            fontSize = m.nameSp,
+            fontWeight = if (winner || g.state != MatchState.POST) FontWeight.Bold else FontWeight.Medium,
+            textAlign = align,
+        )
+        val deepLink = Intent(Intent.ACTION_VIEW, Uri.parse("leaguehub://match/${g.competition}/${g.id}"))
             .setPackage(context.packageName)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        Row(GlanceModifier.fillMaxWidth().clickable(actionStartActivity(deepLink)), verticalAlignment = Alignment.CenterVertically) {
-            if (wide) {
-                row.league?.let { Logo(it, 14.dp) } ?: Spacer(GlanceModifier.size(14.dp))
-                Spacer(GlanceModifier.width(8.dp))
-            }
+        Row(
+            GlanceModifier.fillMaxWidth().height(m.rowH.dp).cornerRadius(14.dp)
+                .background(if (g.state == MatchState.IN) LiveCard else Card)
+                .padding(horizontal = if (narrow) 6.dp else 10.dp)
+                .clickable(actionStartActivity(deepLink)),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             // Domicile, aligné vers le score.
             Text(
-                if (narrow) m.homeAbbr else m.homeName,
+                if (narrow || !wide && g.homeName.length > 12) g.homeAbbr else g.homeName,
                 modifier = GlanceModifier.defaultWeight(),
-                style = nameStyle.copy(textAlign = TextAlign.End),
+                style = nameStyle(homeWins, TextAlign.End),
                 maxLines = 1,
             )
-            Spacer(GlanceModifier.width(6.dp))
-            row.home?.let { Logo(it, logoSize) } ?: Spacer(GlanceModifier.size(logoSize))
-            Center(context, m)
-            row.away?.let { Logo(it, logoSize) } ?: Spacer(GlanceModifier.size(logoSize))
-            Spacer(GlanceModifier.width(6.dp))
-            Text(if (narrow) m.awayAbbr else m.awayName, modifier = GlanceModifier.defaultWeight(), style = nameStyle, maxLines = 1)
+            Spacer(GlanceModifier.width(8.dp))
+            row.home?.let { Logo(it, m.logo) } ?: Spacer(GlanceModifier.size(m.logo))
+            Center(context, g, m)
+            row.away?.let { Logo(it, m.logo) } ?: Spacer(GlanceModifier.size(m.logo))
+            Spacer(GlanceModifier.width(8.dp))
+            Text(
+                if (narrow || !wide && g.awayName.length > 12) g.awayAbbr else g.awayName,
+                modifier = GlanceModifier.defaultWeight(),
+                style = nameStyle(awayWins, TextAlign.Start),
+                maxLines = 1,
+            )
             if (extra > 0) {
                 Spacer(GlanceModifier.width(6.dp))
                 Text("+$extra", style = TextStyle(color = Secondary, fontSize = 11.sp, fontWeight = FontWeight.Bold))
@@ -376,20 +467,20 @@ class TodayMatchesWidget : GlanceAppWidget() {
         }
     }
 
-    /** Centre de la ligne : score (rouge en direct, avec la minute) ou heure du coup d'envoi. */
+    /** Centre : heure (jaune) avant le match, score et minute (rouge) pendant, score et « Terminé » après. */
     @Composable
-    private fun Center(context: Context, m: TodayItem) {
-        Column(GlanceModifier.width(58.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            when (m.state) {
-                MatchState.PRE -> Text(formatTime(m.kickoff), style = TextStyle(color = Accent, fontSize = 14.sp, fontWeight = FontWeight.Bold))
+    private fun Center(context: Context, g: TodayItem, m: ListMetrics) {
+        Column(GlanceModifier.width(64.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            when (g.state) {
+                MatchState.PRE -> Text(formatTime(g.kickoff), style = TextStyle(color = Accent, fontSize = m.centerSp, fontWeight = FontWeight.Bold))
                 MatchState.IN -> {
-                    Text("${m.homeScore ?: 0} - ${m.awayScore ?: 0}", style = TextStyle(color = Live, fontSize = 14.sp, fontWeight = FontWeight.Bold))
-                    Text(m.clock.ifEmpty { context.getString(R.string.live) }, style = TextStyle(color = Live, fontSize = 10.sp), maxLines = 1)
+                    Text("${g.homeScore ?: 0} - ${g.awayScore ?: 0}", style = TextStyle(color = Live, fontSize = m.centerSp, fontWeight = FontWeight.Bold))
+                    Text("● " + g.clock.ifEmpty { context.getString(R.string.live) }, style = TextStyle(color = Live, fontSize = 10.sp, fontWeight = FontWeight.Bold), maxLines = 1)
                 }
-                MatchState.POST -> Text(
-                    "${m.homeScore ?: 0} - ${m.awayScore ?: 0}",
-                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 14.sp, fontWeight = FontWeight.Bold),
-                )
+                MatchState.POST -> {
+                    Text("${g.homeScore ?: 0} - ${g.awayScore ?: 0}", style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = m.centerSp, fontWeight = FontWeight.Bold))
+                    Text(context.getString(R.string.status_final), style = TextStyle(color = Secondary, fontSize = 9.sp), maxLines = 1)
+                }
             }
         }
     }
