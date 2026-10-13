@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">LeagueHub</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Accueil</string>
+    <string name="nav_leagues">Championnats</string>
+    <string name="nav_ucl">LDC</string>
+    <string name="nav_search">Recherche</string>
+    <string name="nav_settings">Réglages</string>
+    <string name="back">Retour</string>
+    <string name="club">Club</string>
+    <string name="match">Match</string>
+    <string name="ldc_title">Ligue des champions</string>
+
+    <!-- États -->
+    <string name="error_generic">Impossible de joindre ESPN pour le moment.</string>
+    <string name="retry">Réessayer</string>
+    <string name="offline_since">Hors ligne · données du %1$s</string>
+    <string name="live">Direct</string>
+    <string name="live_now">En direct</string>
+
+    <!-- Accueil -->
+    <string name="figure_matches">Matchs du jour</string>
+    <string name="figure_live">En direct</string>
+    <string name="figure_goals">Buts du jour</string>
+    <string name="my_club">Mon club</string>
+    <string name="today_matches">Matchs du jour</string>
+    <string name="no_match_today">Aucun match aujourd\'hui dans les 6 compétitions.</string>
+    <string name="no_favorite_yet">Aucun club favori pour l\'instant.</string>
+    <string name="choose_club">Choisir un club</string>
+
+    <!-- Championnat -->
+    <string name="tab_standings">Classement</string>
+    <string name="tab_matches">Matchs</string>
+    <string name="tab_scorers">Buteurs</string>
+    <string name="tab_news">Actus</string>
+    <string name="col_club">Club</string>
+    <string name="col_played">J</string>
+    <string name="col_gd">Diff</string>
+    <string name="col_points">Pts</string>
+    <string name="moves_up">Monte</string>
+    <string name="moves_down">Descend</string>
+    <string name="live_standings_banner">Classement en direct : résultats provisoires des matchs en cours.</string>
+    <string name="no_standings">Classement indisponible.</string>
+    <string name="no_matches">Aucun match sur la période.</string>
+    <string name="upcoming_and_live">À venir et en direct</string>
+    <string name="latest_results">Derniers résultats</string>
+    <string name="top_scorers">Meilleurs buteurs</string>
+    <string name="top_assists">Meilleurs passeurs</string>
+    <string name="no_scorers">Statistiques pas encore disponibles.</string>
+    <string name="no_news">Aucun article.</string>
+    <string name="appearances">%1$d matchs</string>
+    <string name="zone_ucl">Ligue des champions</string>
+    <string name="zone_uel">Ligue Europa</string>
+    <string name="zone_uecl">Ligue Conférence</string>
+    <string name="zone_playoff">Barrage</string>
+    <string name="zone_relegation">Relégation</string>
+    <string name="zone_other">Autre</string>
+
+    <!-- Statuts -->
+    <string name="status_halftime">Mi-temps</string>
+    <string name="status_final">Terminé</string>
+    <string name="status_final_aet">Terminé (a.p.)</string>
+    <string name="status_final_pen">Terminé (t.a.b.)</string>
+    <string name="status_postponed">Reporté</string>
+    <string name="status_canceled">Annulé</string>
+    <string name="status_abandoned">Arrêté</string>
+    <string name="status_suspended">Suspendu</string>
+    <string name="status_delayed">Retardé</string>
+    <string name="after_extra_time">a.p.</string>
+    <string name="penalties_short">t.a.b. %1$s</string>
+
+    <!-- Compte à rebours -->
+    <string name="kickoff_now">Coup d\'envoi</string>
+    <string name="countdown_days">J-%1$d · %2$d h</string>
+    <string name="countdown_hours">%1$d h %2$02d</string>
+    <string name="countdown_minutes">%1$d min</string>
+    <string name="next_kickoff">Prochain coup d\'envoi</string>
+    <string name="matches_that_day">%1$d matchs ce jour-là</string>
+
+    <!-- Forme -->
+    <string name="form_w">V</string>
+    <string name="form_d">N</string>
+    <string name="form_l">D</string>
+
+    <!-- LDC -->
+    <string name="ldc_tab_league">Phase de ligue</string>
+    <string name="ldc_tab_knockout">Phase finale</string>
+    <string name="ldc_tab_simulator">Simulateur</string>
+    <string name="ldc_tab_draw">Tirage</string>
+    <string name="ldc_zone_q">Huitièmes directs</string>
+    <string name="ldc_zone_po">Barrages</string>
+    <string name="ldc_zone_out">Éliminés</string>
+    <string name="ldc_rules_in_progress">Phase en cours : points, différence de buts, buts, buts à l\'extérieur, victoires, victoires à l\'extérieur (art. 18.01).</string>
+    <string name="ldc_rules_complete">Phase terminée : critères 1 à 10 de l\'article 18.01, puis annexe D.8.</string>
+    <string name="decided_by">Départagé : %1$s</string>
+    <string name="crit_pts">points</string>
+    <string name="crit_gd">différence de buts</string>
+    <string name="crit_gf">buts marqués</string>
+    <string name="crit_away_gf">buts à l\'extérieur</string>
+    <string name="crit_w">victoires</string>
+    <string name="crit_away_w">victoires à l\'extérieur</string>
+    <string name="crit_opp_pts">points des adversaires</string>
+    <string name="crit_opp_gd">diff. de buts des adversaires</string>
+    <string name="crit_opp_gf">buts des adversaires</string>
+    <string name="crit_disc">fair-play</string>
+    <string name="crit_coef">coefficient club</string>
+    <string name="crit_h2h">confrontation directe (hors UEFA)</string>
+    <string name="crit_alphabetical">égalité, ordre alphabétique</string>
+    <string name="crit_unresolved">donnée manquante</string>
+    <string name="crit_coef_association">coefficient de l\'association</string>
+    <string name="crit_coef_season">coefficient %1$s</string>
+    <string name="knockout_not_started">La phase finale n\'a pas encore commencé.</string>
+    <string name="champion">Vainqueur : %1$s</string>
+    <string name="round_qualifying">Qualifications</string>
+    <string name="round_playoff">Barrages</string>
+    <string name="round_r16">Huitièmes de finale</string>
+    <string name="round_qf">Quarts de finale</string>
+    <string name="round_sf">Demi-finales</string>
+    <string name="round_final">Finale</string>
+    <string name="first_leg">Aller</string>
+    <string name="second_leg">Retour</string>
+    <string name="simulator_help">Saisissez des scores : le classement est recalculé par le moteur UEFA.</string>
+    <string name="simulator_nothing">Aucun match de phase de ligue à simuler.</string>
+    <string name="simulated_table">Classement simulé</string>
+    <string name="simulator_matches">Matchs à venir</string>
+    <string name="reset">Réinitialiser</string>
+    <string name="plus">Plus un but</string>
+    <string name="minus">Moins un but</string>
+    <string name="draw_title">%1$s · chapeau %2$d</string>
+    <string name="draw_source">Tirage officiel UEFA du %1$s</string>
+    <string name="draw_legend">⌂ à domicile · ✈ à l\'extérieur. Dates complétées dès qu\'ESPN publie le calendrier.</string>
+    <string name="date_tbd">Date à venir</string>
+
+    <!-- Club -->
+    <string name="set_favorite">Définir comme club favori</string>
+    <string name="unset_favorite">Retirer des favoris</string>
+    <string name="favorite_club">Club favori</string>
+    <string name="next_match">Prochain match</string>
+    <string name="form_last5">Forme : 5 derniers matchs officiels</string>
+    <string name="club_played">Matchs</string>
+    <string name="club_wins">Victoires</string>
+    <string name="club_draws">Nuls</string>
+    <string name="club_losses">Défaites</string>
+    <string name="club_goals_for">Buts marqués</string>
+    <string name="club_goals_against">Buts encaissés</string>
+    <string name="settings_appearance">Apparence</string>
+    <string name="palmares">Palmarès (%1$d titres)</string>
+    <string name="trophies_national">Titres nationaux</string>
+    <string name="trophies_europe">Europe</string>
+    <string name="trophies_world">Monde</string>
+    <string name="trophies_other">Autres</string>
+    <string name="season_by_month">La saison, mois par mois</string>
+
+    <!-- Match -->
+    <string name="timeline">Chronologie</string>
+    <string name="stats">Statistiques</string>
+    <string name="lineups">Compositions</string>
+    <string name="substitutes">Remplaçants</string>
+    <string name="referee">Arbitre : %1$s</string>
+    <string name="attendance">%1$d spectateurs</string>
+    <string name="no_details">Le détail sera disponible au coup d\'envoi.</string>
+    <string name="stat_possession">Possession</string>
+    <string name="stat_shots">Tirs</string>
+    <string name="stat_shots_on_target">Tirs cadrés</string>
+    <string name="stat_corners">Corners</string>
+    <string name="stat_fouls">Fautes</string>
+    <string name="stat_yellow">Cartons jaunes</string>
+    <string name="stat_red">Cartons rouges</string>
+    <string name="stat_offsides">Hors-jeu</string>
+    <string name="stat_saves">Arrêts</string>
+    <string name="stat_passes">Passes réussies</string>
+    <string name="goal_celebration">BUUUT !</string>
+
+    <!-- Recherche -->
+    <string name="search_hint">Rechercher un club…</string>
+    <string name="search_empty">Aucun club trouvé. Ouvrez un championnat pour enrichir la recherche.</string>
+
+    <!-- Réglages -->
+    <string name="settings_theme">Thème</string>
+    <string name="settings_language">Langue</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="theme_system">Système</string>
+    <string name="theme_light">Clair</string>
+    <string name="theme_dark">Sombre</string>
+    <string name="lang_fr" translatable="false">Français</string>
+    <string name="lang_en" translatable="false">English</string>
+    <string name="remove">Retirer</string>
+    <string name="club_theme">Thème aux couleurs du club favori</string>
+    <string name="notify_kickoff">Coup d\'envoi du club favori</string>
+    <string name="notify_goals">Buts du club favori</string>
+    <string name="disclaimer">Projet de fan, non officiel. Non affilié aux ligues ni à l\'UEFA. Données issues de l\'API publique non officielle d\'ESPN, à titre indicatif.</string>
+
+    <!-- Notifications et widget -->
+    <string name="channel_kickoff">Coups d\'envoi</string>
+    <string name="channel_goals">Buts</string>
+    <string name="notif_kickoff_title">%1$s joue bientôt</string>
+    <string name="notif_kickoff_text">Contre %1$s · %2$s</string>
+    <string name="notif_goal_title">But de %1$s !</string>
+    <string name="widget_no_favorite">Choisissez un club favori</string>
+    <string name="widget_no_match">Aucun match programmé</string>
+    <string name="widget_today">Aujourd\'hui</string>
+    <string name="widget_tomorrow">Demain</string>
+    <string name="widget_in_days">Dans %1$d jours</string>
+    <string name="widget_home">À domicile</string>
+    <string name="widget_away">À l\'extérieur</string>
+    <string name="widget_description">Prochain match de votre club favori</string>
+</resources>
