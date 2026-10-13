@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Ballon stylisé, centré dans la zone sûre de l'icône adaptative. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,30a24,24 0,1 1,0 48a24,24 0,1 1,0 -48z" />
+    <path
+        android:fillColor="#1E3A8A"
+        android:pathData="M54,44l9.5,6.9l-3.6,11.2h-11.8l-3.6,-11.2z" />
+    <path
+        android:fillColor="#1E3A8A"
+        android:pathData="M54,30.5l4,4.5l-4,3l-4,-3zM76.5,49l-2,6l-4.5,-1.5l0.5,-5.5zM31.5,49l6,-1l0.5,5.5l-4.5,1.5zM40,72l3,-5.5l5,1.5l-1,5.5zM68,72l-7,1.5l-1,-5.5l5,-1.5z" />
+</vector>
