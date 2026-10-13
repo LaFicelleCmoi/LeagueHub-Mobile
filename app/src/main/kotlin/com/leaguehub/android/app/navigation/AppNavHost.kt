@@ -59,6 +59,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.leaguehub.android.R
 import com.leaguehub.android.domain.leagueconfig.CompetitionKind
 import com.leaguehub.android.domain.leagueconfig.Competitions
@@ -196,7 +197,7 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
             composable(Routes.CLUB) {
                 ClubScreen(onMatch = ::openMatch)
             }
-            composable(Routes.MATCH) {
+            composable(Routes.MATCH, deepLinks = listOf(navDeepLink { uriPattern = "leaguehub://match/{competition}/{eventId}" })) {
                 MatchDetailScreen()
             }
         }
