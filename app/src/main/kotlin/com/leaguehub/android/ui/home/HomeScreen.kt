@@ -51,7 +51,9 @@ import com.leaguehub.android.core.util.formatShortDate
 import com.leaguehub.android.core.util.formatTime
 import com.leaguehub.android.domain.leagueconfig.Competitions
 import com.leaguehub.android.domain.leagueconfig.LeagueConfig
+import com.leaguehub.android.domain.model.FavoriteClub
 import com.leaguehub.android.domain.model.Match
+import com.leaguehub.android.domain.model.TeamForm
 import com.leaguehub.android.domain.schedule.PARIS
 import com.leaguehub.android.ui.components.AppCard
 import com.leaguehub.android.ui.components.CompactMatchRow
@@ -80,6 +82,15 @@ fun HomeScreen(
             item { Header() }
             // Affiche du club favori : le cœur de l'accueil.
             item { FavoriteHero(state, onTeam, onMatch, onPickFavorite) }
+            // Clubs suivis : une carte par club, prochain match ou score en direct.
+            if (state.followed.isNotEmpty()) {
+                item { SectionTitle(stringResource(R.string.followed_clubs)) }
+                item {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(horizontal = 12.dp)) {
+                        items(state.followed, key = { it.first.teamId }) { (club, form) -> FollowedCard(club, form, onTeam, onMatch) }
+                    }
+                }
+            }
             item { Figures(state.figures) }
             // Accès rapide aux compétitions.
             item {
@@ -290,5 +301,54 @@ private fun Pill(text: String, color: Color, dot: Boolean = false) {
     ) {
         if (dot) { LiveDot(); Spacer(Modifier.width(6.dp)) }
         Text(text, style = MaterialTheme.typography.labelMedium, color = color)
+    }
+}
+
+/** Carte d'un club suivi : logo et nom, puis son match en direct ou le prochain. */
+@Composable
+private fun FollowedCard(
+    club: FavoriteClub,
+    form: TeamForm?,
+    onTeam: (String, String) -> Unit,
+    onMatch: (String, String) -> Unit,
+) {
+    val match = form?.live ?: form?.next
+    AppCard(
+        Modifier.width(220.dp).clickable {
+            if (match != null) onMatch(match.competitionCode, match.id) else onTeam(club.competition, club.teamId)
+        },
+    ) {
+        Column(Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TeamLogo(club.logo, size = 28.dp)
+                Spacer(Modifier.width(10.dp))
+                Text(club.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Spacer(Modifier.height(12.dp))
+            when {
+                form == null -> Text("…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                match == null -> Text(stringResource(R.string.widget_no_match), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                else -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    TeamLogo(match.opponent.logo, size = 20.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            (if (match.home) "vs " else "@ ") + match.opponent.shortName,
+                            style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            if (form.live != null) statusLabel(match.statusName, match.state, match.kickoff, match.clock) else formatShortDate(match.kickoff),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (form.live != null) LocalSportColors.current.live else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Text(
+                        if (form.live != null) "${match.goalsFor ?: 0}-${match.goalsAgainst ?: 0}" else formatTime(match.kickoff),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = if (form.live != null) LocalSportColors.current.live else LocalSportColors.current.accent,
+                    )
+                }
+            }
+        }
     }
 }
