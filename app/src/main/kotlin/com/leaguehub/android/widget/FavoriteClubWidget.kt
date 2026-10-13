@@ -194,36 +194,79 @@ private fun formColors(code: Char): Pair<ColorProvider, ColorProvider> = when (c
 }
 
 /**
- * Échelle du contenu selon la taille réelle du widget : tout grandit avec lui
- * (1.0 pour un 4×2 standard, jusqu'à 1.6 pour un widget très haut).
+ * Choix de la mise en page et de l'échelle à partir de la taille réelle du widget
+ * ET de la taille de police du système : on calcule la hauteur que prend le contenu
+ * pour qu'il tienne toujours entièrement, sans jamais être rogné.
  */
-private class Metrics(size: DpSize) {
-    val scale: Float = (size.height.value / 120f).coerceIn(1f, 1.6f)
-        .coerceAtMost(size.width.value / 200f).coerceAtLeast(1f)
+private class Metrics(private val widget: DpSize, private val fontScale: Float) {
+    /** Hauteur (dp) d'une ligne de texte de [sp] sp, police système comprise. */
+    fun line(sp: Float) = sp * LINE_HEIGHT * fontScale
+
+    /** Place disponible à l'intérieur du liseré et des marges. */
+    private val innerW = widget.width.value - 2f - 32f
+    private fun innerH(verticalPadding: Float) = widget.height.value - 2f - 2 * verticalPadding
+
+    // --- Détaillé : en-tête + trait + 2 lignes d'équipes (+ pied) ---
+    private val detailedH = innerH(14f)
+    /** Hauteur du contenu détaillé par unité d'échelle : en-tête (heure + date), 2 équipes et leur écart. */
+    private val perScale = line(20f) + line(11f) + 2 * maxOf(28f, line(15f)) + 8f
+    private val footerPerScale = line(12f)
+    private val widthScale = innerW / 220f
+    private val scaleNoFooter = minOf((detailedH - 9f - SLACK) / perScale, widthScale)
+    private val scaleWithFooter = minOf((detailedH - 18f - SLACK) / (perScale + footerPerScale), widthScale)
+
+    /** Le pied (stade, jour) n'apparaît que s'il tient à l'échelle normale. */
+    val footer = scaleWithFooter >= 1f
+    val scale: Float = (if (footer) scaleWithFooter else scaleNoFooter).coerceIn(MIN_SCALE, MAX_SCALE)
     fun dp(v: Float) = (v * scale).dp
     fun sp(v: Float) = (v * scale).sp
-    /** Assez de hauteur pour un pied de widget (stade, jour). */
-    val footer = size.height >= 150.dp
     /** Assez de largeur pour les 5 pastilles de forme. */
-    val fullForm = size.width >= 260.dp
-    /** Mise en page choisie selon la forme du widget. */
+    val fullForm = widget.width >= 300.dp
+
+    // --- Formats d'une ligne (2×1, 4×1) ---
+    private val rowH = innerH(8f)
+    /** Deuxième ligne de texte (date, compétition) seulement si elle tient. */
+    val rowTwoLines = rowH >= line(18f) + line(11f)
+    val rowLogo = rowH.coerceIn(16f, 28f).dp
+
+    // --- Carré (2×2) : heure, logos face à face, adversaire, date ---
+    private val squareText = line(16f) + line(13f) + line(11f) + 12f
+    val squareLogo = minOf(rowH - squareText, (innerW - 40f) / 2, 56f).dp
+    private val squareFits = squareLogo >= 24.dp
+
+    // --- 1×1 : logos + heure ---
+    private val tinyH = innerH(8f)
+    private val tinyW = widget.width.value - 2f - 12f
+    val tinyLogo = minOf((tinyW - 4f) / 2, tinyH - line(14f) - 4f, 36f).dp
+    /** Trop petit pour des logos lisibles : l'heure seule. */
+    val tinyShowLogos = tinyLogo >= 14.dp
+
     val layout: WidgetLayout = when {
-        size.width < 130.dp -> WidgetLayout.TINY
-        size.height < 100.dp && size.width >= 250.dp -> WidgetLayout.ROW
-        size.height < 100.dp -> WidgetLayout.COMPACT
-        size.width < 220.dp -> WidgetLayout.SQUARE
-        else -> WidgetLayout.DETAILED
+        widget.width < 130.dp -> WidgetLayout.TINY
+        widget.width >= 220.dp && scaleNoFooter >= MIN_SCALE -> WidgetLayout.DETAILED
+        widget.width < 220.dp && squareFits -> WidgetLayout.SQUARE
+        widget.width >= 250.dp -> WidgetLayout.ROW
+        else -> WidgetLayout.COMPACT
     }
     val compact = layout != WidgetLayout.DETAILED
+
+    private companion object {
+        /** Hauteur d'une ligne ≈ 1,3 × la taille de police. */
+        const val LINE_HEIGHT = 1.3f
+        /** Marge de sécurité (arrondis des launchers). */
+        const val SLACK = 6f
+        const val MIN_SCALE = 0.8f
+        const val MAX_SCALE = 1.5f
+    }
 }
 
 /**
- * Formats gérés :
- * - TINY (1×1, 1×2) : logos et heure empilés ;
+ * Formats gérés (choisis par [Metrics] selon la place réelle) :
+ * - TINY (1×1) : logos et heure empilés, ou l'heure seule si c'est trop petit ;
  * - COMPACT (2×1, 3×1) : une ligne, adversaire et heure ;
  * - ROW (4×1 et plus) : une ligne complète, les deux clubs, la compétition, l'heure et le jour ;
  * - SQUARE (2×2, 2×3) : affiche vertical, logos face à face au centre ;
- * - DETAILED (3×2, 4×2 et plus) : la maquette complète, avec pied si assez haut.
+ * - DETAILED (3×2, 4×2 et plus) : la maquette complète, avec pied s'il tient.
  */
 private enum class WidgetLayout { TINY, COMPACT, ROW, SQUARE, DETAILED }
 
@@ -244,7 +287,7 @@ class FavoriteClubWidget : GlanceAppWidget() {
 
     @Composable
     private fun Content(context: Context, s: WidgetState.Snapshot) {
-        val m = Metrics(LocalSize.current)
+        val m = Metrics(LocalSize.current, context.resources.configuration.fontScale)
         // Liseré : un fond « bordure » arrondi, puis le fond du widget 1 dp plus petit.
         Box(
             GlanceModifier.fillMaxSize().cornerRadius(20.dp).background(Border).padding(1.dp)
@@ -262,10 +305,10 @@ class FavoriteClubWidget : GlanceAppWidget() {
                     s.club == null -> Message(context.getString(R.string.widget_no_favorite))
                     !s.hasMatch -> NoMatch(context, s, m)
                     else -> when (m.layout) {
-                        WidgetLayout.TINY -> Tiny(s)
-                        WidgetLayout.COMPACT -> Compact(s)
-                        WidgetLayout.ROW -> WideRow(context, s)
-                        WidgetLayout.SQUARE -> Square(s)
+                        WidgetLayout.TINY -> Tiny(s, m)
+                        WidgetLayout.COMPACT -> Compact(s, m)
+                        WidgetLayout.ROW -> WideRow(context, s, m)
+                        WidgetLayout.SQUARE -> Square(s, m)
                         WidgetLayout.DETAILED -> Detailed(context, s, m)
                     }
                 }
@@ -365,14 +408,16 @@ class FavoriteClubWidget : GlanceAppWidget() {
 
     /** 1×1 : les deux logos et l'heure (ou le score), centrés. */
     @Composable
-    private fun Tiny(s: WidgetState.Snapshot) {
+    private fun Tiny(s: WidgetState.Snapshot, m: Metrics) {
         Column(GlanceModifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.CenterVertically) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                s.clubLogo?.let { Logo(it, 22.dp) }
-                Spacer(GlanceModifier.width(4.dp))
-                s.opponentLogo?.let { Logo(it, 22.dp) }
+            if (m.tinyShowLogos) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    s.clubLogo?.let { Logo(it, m.tinyLogo) }
+                    Spacer(GlanceModifier.width(4.dp))
+                    s.opponentLogo?.let { Logo(it, m.tinyLogo) }
+                }
+                Spacer(GlanceModifier.height(4.dp))
             }
-            Spacer(GlanceModifier.height(4.dp))
             Text(
                 if (s.live) "${s.goalsFor}-${s.goalsAgainst}" else s.time,
                 style = TextStyle(color = if (s.live) Live else Accent, fontSize = 14.sp, fontWeight = FontWeight.Bold),
@@ -383,17 +428,17 @@ class FavoriteClubWidget : GlanceAppWidget() {
 
     /** 4×1 : une ligne complète, compétition à gauche, les deux clubs, heure et jour à droite. */
     @Composable
-    private fun WideRow(context: Context, s: WidgetState.Snapshot) {
+    private fun WideRow(context: Context, s: WidgetState.Snapshot, m: Metrics) {
         Row(GlanceModifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-            s.clubLogo?.let { Logo(it, 28.dp); Spacer(GlanceModifier.width(6.dp)) }
-            s.opponentLogo?.let { Logo(it, 28.dp); Spacer(GlanceModifier.width(10.dp)) }
+            s.clubLogo?.let { Logo(it, m.rowLogo); Spacer(GlanceModifier.width(6.dp)) }
+            s.opponentLogo?.let { Logo(it, m.rowLogo); Spacer(GlanceModifier.width(10.dp)) }
             Column(GlanceModifier.defaultWeight()) {
                 Text(
                     s.club.orEmpty() + (if (s.home) " vs " else " @ ") + s.opponentShort,
                     style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Bold),
                     maxLines = 1,
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                if (m.rowTwoLines) Row(verticalAlignment = Alignment.CenterVertically) {
                     s.competitionLogo?.let { Logo(it, 12.dp); Spacer(GlanceModifier.width(4.dp)) }
                     Text(
                         if (s.live) "${s.goalsFor} – ${s.goalsAgainst}" else s.competition,
@@ -409,14 +454,14 @@ class FavoriteClubWidget : GlanceAppWidget() {
                     style = TextStyle(color = if (s.live) Live else Accent, fontSize = 18.sp, fontWeight = FontWeight.Bold),
                     maxLines = 1,
                 )
-                if (!s.live) Text(relativeDay(context, s.kickoff), style = TextStyle(color = Secondary, fontSize = 11.sp), maxLines = 1)
+                if (!s.live && m.rowTwoLines) Text(relativeDay(context, s.kickoff), style = TextStyle(color = Secondary, fontSize = 11.sp), maxLines = 1)
             }
         }
     }
 
     /** 2×2 : affiche vertical, heure en haut, logos face à face au centre, adversaire et date en bas. */
     @Composable
-    private fun Square(s: WidgetState.Snapshot) {
+    private fun Square(s: WidgetState.Snapshot, m: Metrics) {
         Column(GlanceModifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 s.competitionLogo?.let { Logo(it, 16.dp) }
@@ -429,7 +474,7 @@ class FavoriteClubWidget : GlanceAppWidget() {
             }
             Spacer(GlanceModifier.defaultWeight())
             Row(verticalAlignment = Alignment.CenterVertically) {
-                s.clubLogo?.let { Logo(it, 36.dp) }
+                s.clubLogo?.let { Logo(it, m.squareLogo) }
                 Text(
                     if (s.live) "  ${s.goalsFor}-${s.goalsAgainst}  " else "  vs  ",
                     style = TextStyle(
@@ -437,7 +482,7 @@ class FavoriteClubWidget : GlanceAppWidget() {
                         fontSize = if (s.live) 16.sp else 12.sp, fontWeight = FontWeight.Bold,
                     ),
                 )
-                s.opponentLogo?.let { Logo(it, 36.dp) }
+                s.opponentLogo?.let { Logo(it, m.squareLogo) }
             }
             Spacer(GlanceModifier.defaultWeight())
             Text(
@@ -451,17 +496,17 @@ class FavoriteClubWidget : GlanceAppWidget() {
 
     /** Mise en page compacte (2×1) : logos, adversaire, heure à droite. */
     @Composable
-    private fun Compact(s: WidgetState.Snapshot) {
+    private fun Compact(s: WidgetState.Snapshot, m: Metrics) {
         Row(GlanceModifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-            s.clubLogo?.let { Logo(it, 24.dp); Spacer(GlanceModifier.width(4.dp)) }
-            s.opponentLogo?.let { Logo(it, 24.dp); Spacer(GlanceModifier.width(8.dp)) }
+            s.clubLogo?.let { Logo(it, minOf(m.rowLogo, 24.dp)); Spacer(GlanceModifier.width(4.dp)) }
+            s.opponentLogo?.let { Logo(it, minOf(m.rowLogo, 24.dp)); Spacer(GlanceModifier.width(8.dp)) }
             Column(GlanceModifier.defaultWeight()) {
                 Text(
                     (if (s.home) "vs " else "@ ") + s.opponentShort,
                     style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Bold),
                     maxLines = 1,
                 )
-                Text(
+                if (m.rowTwoLines) Text(
                     if (s.live) "${s.goalsFor} – ${s.goalsAgainst}" else s.date,
                     style = TextStyle(color = Secondary, fontSize = 11.sp),
                     maxLines = 1,
