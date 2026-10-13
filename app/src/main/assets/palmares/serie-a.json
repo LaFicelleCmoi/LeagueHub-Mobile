@@ -1,0 +1,1137 @@
+{
+  "slug": "serie-a",
+  "updatedAt": "2026-09-19",
+  "clubs": {
+    "103": {
+      "qid": "Q1543",
+      "name": "AC Milan",
+      "total": 54,
+      "trophies": [
+        {
+          "key": "championnat",
+          "label": "Championnat d'Italie",
+          "count": 19,
+          "years": [
+            "1901",
+            "1906",
+            "1907",
+            "1951",
+            "1955",
+            "1957",
+            "1959",
+            "1962",
+            "1968",
+            "1979",
+            "1988",
+            "1992",
+            "1993",
+            "1994",
+            "1996",
+            "1999",
+            "2004",
+            "2011",
+            "2022"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "coupe",
+          "label": "Coupe d'Italie",
+          "count": 5,
+          "years": [
+            "1967",
+            "1972",
+            "1973",
+            "1977",
+            "2003"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "c1",
+          "label": "Ligue des champions",
+          "count": 7,
+          "years": [
+            "1963",
+            "1969",
+            "1989",
+            "1990",
+            "1994",
+            "2003",
+            "2007"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "supercoupe-europe",
+          "label": "Supercoupe d'Europe",
+          "count": 3,
+          "years": [
+            "1989",
+            "1990",
+            "1994"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "c2",
+          "label": "Coupe des coupes",
+          "count": 2,
+          "years": [
+            "1968",
+            "1973"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "intercontinentale",
+          "label": "Coupe intercontinentale",
+          "count": 3,
+          "years": [
+            "1969",
+            "1989",
+            "1990"
+          ],
+          "scope": "monde"
+        },
+        {
+          "key": "mondial",
+          "label": "Coupe du monde des clubs",
+          "count": 1,
+          "years": [
+            "2007"
+          ],
+          "scope": "monde"
+        },
+        {
+          "key": "autre:Q496887",
+          "label": "tournoi de Viareggio",
+          "count": 8,
+          "years": [
+            "1949",
+            "1952",
+            "1953",
+            "1957",
+            "1959",
+            "1960",
+            "1999",
+            "2001"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q194052",
+          "label": "championnat d'Italie de football de deuxième division",
+          "count": 2,
+          "years": [
+            "1981",
+            "1983"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q96475166",
+          "label": "Coppa del Mediterraneo",
+          "count": 2,
+          "years": [
+            "1992",
+            "1994"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q4216",
+          "label": "Coupe Latine de football",
+          "count": 2,
+          "years": [
+            "1951",
+            "1956"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "104": {
+      "qid": "Q2739",
+      "name": "AS Roma",
+      "total": 18,
+      "trophies": [
+        {
+          "key": "coupe",
+          "label": "Coupe d'Italie",
+          "count": 9,
+          "years": [
+            "1964",
+            "1969",
+            "1980",
+            "1981",
+            "1984",
+            "1986",
+            "1991",
+            "2007",
+            "2008"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "championnat",
+          "label": "Championnat d'Italie",
+          "count": 3,
+          "years": [
+            "1942",
+            "1983",
+            "2001"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "villes-foires",
+          "label": "Coupe des villes de foires",
+          "count": 1,
+          "years": [
+            "1961"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "autre:Q496887",
+          "label": "tournoi de Viareggio",
+          "count": 3,
+          "years": [
+            "1981",
+            "1983",
+            "1991"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q194052",
+          "label": "championnat d'Italie de football de deuxième division",
+          "count": 1,
+          "years": [
+            "1952"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q1342576",
+          "label": "Coupe anglo-italienne",
+          "count": 1,
+          "years": [
+            "1972"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "105": {
+      "qid": "Q1886",
+      "name": "Atalanta",
+      "total": 10,
+      "trophies": [
+        {
+          "key": "coupe",
+          "label": "Coupe d'Italie",
+          "count": 1,
+          "years": [
+            "1963"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "c3",
+          "label": "Ligue Europa",
+          "count": 1,
+          "years": [
+            "2024"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "autre:Q194052",
+          "label": "championnat d'Italie de football de deuxième division",
+          "count": 5,
+          "years": [
+            "1940",
+            "1959",
+            "1984",
+            "2006",
+            "2011"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q496887",
+          "label": "tournoi de Viareggio",
+          "count": 2,
+          "years": [
+            "1969",
+            "1993"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q3911657",
+          "label": "Prima Divisione",
+          "count": 1,
+          "years": [
+            "1928"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "107": {
+      "qid": "Q1893",
+      "name": "Bologna",
+      "total": 13,
+      "trophies": [
+        {
+          "key": "championnat",
+          "label": "Championnat d'Italie",
+          "count": 7,
+          "years": [
+            "1925",
+            "1929",
+            "1936",
+            "1937",
+            "1939",
+            "1941",
+            "1964"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "coupe",
+          "label": "Coupe d'Italie",
+          "count": 2,
+          "years": [
+            "1970",
+            "1974"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "autre:Q194052",
+          "label": "championnat d'Italie de football de deuxième division",
+          "count": 2,
+          "years": [
+            "1988",
+            "1996"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q182068",
+          "label": "Coupe Intertoto",
+          "count": 1,
+          "years": [
+            "1998"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q496887",
+          "label": "tournoi de Viareggio",
+          "count": 1,
+          "years": [
+            "1967"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "109": {
+      "qid": "Q2052",
+      "name": "Fiorentina",
+      "total": 20,
+      "trophies": [
+        {
+          "key": "coupe",
+          "label": "Coupe d'Italie",
+          "count": 6,
+          "years": [
+            "1940",
+            "1961",
+            "1966",
+            "1975",
+            "1996",
+            "2001"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "championnat",
+          "label": "Championnat d'Italie",
+          "count": 2,
+          "years": [
+            "1956",
+            "1969"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "c2",
+          "label": "Coupe des coupes",
+          "count": 1,
+          "years": [
+            "1961"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "autre:Q496887",
+          "label": "tournoi de Viareggio",
+          "count": 8,
+          "years": [
+            "1966",
+            "1973",
+            "1974",
+            "1978",
+            "1979",
+            "1982",
+            "1988",
+            "1992"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q194052",
+          "label": "championnat d'Italie de football de deuxième division",
+          "count": 3,
+          "years": [
+            "1931",
+            "1939",
+            "1994"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "110": {
+      "qid": "Q631",
+      "name": "Internazionale",
+      "total": 45,
+      "trophies": [
+        {
+          "key": "championnat",
+          "label": "Championnat d'Italie",
+          "count": 21,
+          "years": [
+            "1910",
+            "1920",
+            "1930",
+            "1938",
+            "1940",
+            "1953",
+            "1954",
+            "1963",
+            "1965",
+            "1966",
+            "1971",
+            "1980",
+            "1989",
+            "2006",
+            "2007",
+            "2008",
+            "2009",
+            "2010",
+            "2021",
+            "2024",
+            "2026"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "coupe",
+          "label": "Coupe d'Italie",
+          "count": 10,
+          "years": [
+            "1939",
+            "1978",
+            "1982",
+            "2005",
+            "2006",
+            "2010",
+            "2011",
+            "2022",
+            "2023",
+            "2026"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "c1",
+          "label": "Ligue des champions",
+          "count": 3,
+          "years": [
+            "1964",
+            "1965",
+            "2010"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "c3",
+          "label": "Ligue Europa",
+          "count": 3,
+          "years": [
+            "1991",
+            "1994",
+            "1998"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "intercontinentale",
+          "label": "Coupe intercontinentale",
+          "count": 2,
+          "years": [
+            "1964",
+            "1965"
+          ],
+          "scope": "monde"
+        },
+        {
+          "key": "mondial",
+          "label": "Coupe du monde des clubs",
+          "count": 1,
+          "years": [
+            "2010"
+          ],
+          "scope": "monde"
+        },
+        {
+          "key": "autre:Q496887",
+          "label": "tournoi de Viareggio",
+          "count": 5,
+          "years": [
+            "1962",
+            "1971",
+            "1986",
+            "2002",
+            "2011"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "111": {
+      "qid": "Q1422",
+      "name": "Juventus",
+      "total": 71,
+      "trophies": [
+        {
+          "key": "championnat",
+          "label": "Championnat d'Italie",
+          "count": 37,
+          "years": [
+            "1905",
+            "1926",
+            "1931",
+            "1932",
+            "1933",
+            "1934",
+            "1935",
+            "1950",
+            "1952",
+            "1958",
+            "1960",
+            "1961",
+            "1967",
+            "1972",
+            "1973",
+            "1975",
+            "1977",
+            "1978",
+            "1981",
+            "1982",
+            "1984",
+            "1986",
+            "1995",
+            "1997",
+            "1998",
+            "2002",
+            "2003",
+            "2005",
+            "2012",
+            "2013",
+            "2014",
+            "2015",
+            "2016",
+            "2017",
+            "2018",
+            "2019",
+            "2020"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "coupe",
+          "label": "Coupe d'Italie",
+          "count": 14,
+          "years": [
+            "1938",
+            "1942",
+            "1959",
+            "1960",
+            "1965",
+            "1979",
+            "1983",
+            "1990",
+            "1995",
+            "2015",
+            "2016",
+            "2017",
+            "2018",
+            "2021"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "c3",
+          "label": "Ligue Europa",
+          "count": 3,
+          "years": [
+            "1977",
+            "1990",
+            "1993"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "c1",
+          "label": "Ligue des champions",
+          "count": 2,
+          "years": [
+            "1985",
+            "1996"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "supercoupe-europe",
+          "label": "Supercoupe d'Europe",
+          "count": 2,
+          "years": [
+            "1984",
+            "1996"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "c2",
+          "label": "Coupe des coupes",
+          "count": 1,
+          "years": [
+            "1984"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "intercontinentale",
+          "label": "Coupe intercontinentale",
+          "count": 2,
+          "years": [
+            "1985",
+            "1996"
+          ],
+          "scope": "monde"
+        },
+        {
+          "key": "autre:Q496887",
+          "label": "tournoi de Viareggio",
+          "count": 8,
+          "years": [
+            "1961",
+            "1994",
+            "2003",
+            "2004",
+            "2005",
+            "2009",
+            "2010",
+            "2012"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q194052",
+          "label": "championnat d'Italie de football de deuxième division",
+          "count": 1,
+          "years": [
+            "2007"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q182068",
+          "label": "Coupe Intertoto",
+          "count": 1,
+          "years": [
+            "1999"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "112": {
+      "qid": "Q2609",
+      "name": "Lazio",
+      "total": 12,
+      "trophies": [
+        {
+          "key": "coupe",
+          "label": "Coupe d'Italie",
+          "count": 7,
+          "years": [
+            "1958",
+            "1998",
+            "2000",
+            "2004",
+            "2009",
+            "2013",
+            "2019"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "championnat",
+          "label": "Championnat d'Italie",
+          "count": 2,
+          "years": [
+            "1974",
+            "2000"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "c2",
+          "label": "Coupe des coupes",
+          "count": 1,
+          "years": [
+            "1999"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "supercoupe-europe",
+          "label": "Supercoupe d'Europe",
+          "count": 1,
+          "years": [
+            "1999"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "autre:Q194052",
+          "label": "championnat d'Italie de football de deuxième division",
+          "count": 1,
+          "years": [
+            "1969"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "113": {
+      "qid": "Q13391",
+      "name": "Lecce",
+      "total": 1,
+      "trophies": [
+        {
+          "key": "autre:Q194052",
+          "label": "championnat d'Italie de football de deuxième division",
+          "count": 1,
+          "years": [
+            "2010"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "114": {
+      "qid": "Q2641",
+      "name": "Napoli",
+      "total": 13,
+      "trophies": [
+        {
+          "key": "coupe",
+          "label": "Coupe d'Italie",
+          "count": 6,
+          "years": [
+            "1962",
+            "1976",
+            "1987",
+            "2012",
+            "2014",
+            "2020"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "championnat",
+          "label": "Championnat d'Italie",
+          "count": 4,
+          "years": [
+            "1987",
+            "1990",
+            "2023",
+            "2025"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "c3",
+          "label": "Ligue Europa",
+          "count": 1,
+          "years": [
+            "1989"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "autre:Q194052",
+          "label": "championnat d'Italie de football de deuxième division",
+          "count": 1,
+          "years": [
+            "1950"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q496887",
+          "label": "tournoi de Viareggio",
+          "count": 1,
+          "years": [
+            "1975"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "115": {
+      "qid": "Q2693",
+      "name": "Parma",
+      "total": 7,
+      "trophies": [
+        {
+          "key": "coupe",
+          "label": "Coupe d'Italie",
+          "count": 3,
+          "years": [
+            "1992",
+            "1999",
+            "2002"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "c3",
+          "label": "Ligue Europa",
+          "count": 2,
+          "years": [
+            "1995",
+            "1999"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "c2",
+          "label": "Coupe des coupes",
+          "count": 1,
+          "years": [
+            "1993"
+          ],
+          "scope": "europe"
+        },
+        {
+          "key": "supercoupe-europe",
+          "label": "Supercoupe d'Europe",
+          "count": 1,
+          "years": [
+            "1993"
+          ],
+          "scope": "europe"
+        }
+      ]
+    },
+    "118": {
+      "qid": "Q2798",
+      "name": "Udinese",
+      "total": 4,
+      "trophies": [
+        {
+          "key": "autre:Q194052",
+          "label": "championnat d'Italie de football de deuxième division",
+          "count": 2,
+          "years": [
+            "1956",
+            "1979"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q182068",
+          "label": "Coupe Intertoto",
+          "count": 1,
+          "years": [
+            "2000"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q1116662",
+          "label": "Seconda Divisione",
+          "count": 1,
+          "years": [
+            "1925"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "239": {
+      "qid": "Q2768",
+      "name": "Torino",
+      "total": 23,
+      "trophies": [
+        {
+          "key": "championnat",
+          "label": "Championnat d'Italie",
+          "count": 8,
+          "years": [
+            "1927",
+            "1928",
+            "1943",
+            "1946",
+            "1947",
+            "1948",
+            "1949",
+            "1976"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "coupe",
+          "label": "Coupe d'Italie",
+          "count": 5,
+          "years": [
+            "1936",
+            "1943",
+            "1968",
+            "1971",
+            "1993"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "autre:Q496887",
+          "label": "tournoi de Viareggio",
+          "count": 6,
+          "years": [
+            "1984",
+            "1985",
+            "1987",
+            "1989",
+            "1995",
+            "1998"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q194052",
+          "label": "championnat d'Italie de football de deuxième division",
+          "count": 3,
+          "years": [
+            "1960",
+            "1990",
+            "2001"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q96475166",
+          "label": "Coppa del Mediterraneo",
+          "count": 1,
+          "years": [
+            "1990"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "2572": {
+      "qid": "Q1120838",
+      "name": "Como",
+      "total": 3,
+      "trophies": [
+        {
+          "key": "autre:Q194052",
+          "label": "championnat d'Italie de football de deuxième division",
+          "count": 3,
+          "years": [
+            "1949",
+            "1980",
+            "2002"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "2925": {
+      "qid": "Q1900",
+      "name": "Cagliari",
+      "total": 2,
+      "trophies": [
+        {
+          "key": "championnat",
+          "label": "Championnat d'Italie",
+          "count": 1,
+          "years": [
+            "1970"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "autre:Q194052",
+          "label": "championnat d'Italie de football de deuxième division",
+          "count": 1,
+          "years": [
+            "2016"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "3263": {
+      "qid": "Q2074",
+      "name": "Genoa",
+      "total": 17,
+      "trophies": [
+        {
+          "key": "championnat",
+          "label": "Championnat d'Italie",
+          "count": 9,
+          "years": [
+            "1898",
+            "1899",
+            "1900",
+            "1902",
+            "1903",
+            "1904",
+            "1915",
+            "1923",
+            "1924"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "coupe",
+          "label": "Coupe d'Italie",
+          "count": 1,
+          "years": [
+            "1937"
+          ],
+          "scope": "national"
+        },
+        {
+          "key": "autre:Q194052",
+          "label": "championnat d'Italie de football de deuxième division",
+          "count": 6,
+          "years": [
+            "1935",
+            "1953",
+            "1962",
+            "1973",
+            "1976",
+            "1989"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q496887",
+          "label": "tournoi de Viareggio",
+          "count": 1,
+          "years": [
+            "1965"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "3997": {
+      "qid": "Q8603",
+      "name": "Sassuolo",
+      "total": 1,
+      "trophies": [
+        {
+          "key": "autre:Q194052",
+          "label": "championnat d'Italie de football de deuxième division",
+          "count": 1,
+          "years": [
+            "2013"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "4007": {
+      "qid": "Q289482",
+      "name": "Monza",
+      "total": 2,
+      "trophies": [
+        {
+          "key": "autre:Q1141778",
+          "label": "championnat d'Italie de football de quatrième division",
+          "count": 1,
+          "years": [
+            "2017"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q607965",
+          "label": "Serie C",
+          "count": 1,
+          "years": [
+            "1927"
+          ],
+          "scope": "autre"
+        }
+      ]
+    },
+    "4057": {
+      "qid": "Q845043",
+      "name": "Frosinone",
+      "total": 0,
+      "trophies": []
+    },
+    "17530": {
+      "qid": "Q501245",
+      "name": "Venezia",
+      "total": 4,
+      "trophies": [
+        {
+          "key": "autre:Q194052",
+          "label": "championnat d'Italie de football de deuxième division",
+          "count": 3,
+          "years": [
+            "1961",
+            "1966",
+            "2026"
+          ],
+          "scope": "autre"
+        },
+        {
+          "key": "autre:Q252836",
+          "label": "Coppa Italia Serie C",
+          "count": 1,
+          "years": [
+            "2017"
+          ],
+          "scope": "autre"
+        }
+      ]
+    }
+  }
+}
