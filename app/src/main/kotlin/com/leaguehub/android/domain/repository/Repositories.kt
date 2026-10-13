@@ -5,6 +5,7 @@ import com.leaguehub.android.domain.model.Article
 import com.leaguehub.android.domain.model.Cached
 import com.leaguehub.android.domain.model.ClubPalmares
 import com.leaguehub.android.domain.model.FavoriteClub
+import com.leaguehub.android.domain.model.FollowedClub
 import com.leaguehub.android.domain.model.Leaders
 import com.leaguehub.android.domain.model.Match
 import com.leaguehub.android.domain.model.MatchDetail
@@ -60,7 +61,12 @@ data class AppSettings(
     val clubTheme: Boolean = false,
     val notifyKickoff: Boolean = true,
     val notifyGoals: Boolean = true,
-)
+    /** Clubs suivis en plus du favori, chacun avec ses propres notifications. */
+    val followed: List<FollowedClub> = emptyList(),
+) {
+    /** Le favori puis les clubs suivis, sans doublon. */
+    val allClubs: List<FavoriteClub> get() = (listOfNotNull(favorite) + followed.map { it.club }).distinctBy { it.teamId }
+}
 
 interface SettingsRepository {
     val settings: Flow<AppSettings>
@@ -69,4 +75,7 @@ interface SettingsRepository {
     suspend fun setFavorite(club: FavoriteClub?)
     suspend fun setClubTheme(enabled: Boolean)
     suspend fun setNotifications(kickoff: Boolean, goals: Boolean)
+    suspend fun follow(club: FavoriteClub)
+    suspend fun unfollow(teamId: String)
+    suspend fun setFollowedNotifications(teamId: String, kickoff: Boolean, goals: Boolean)
 }
