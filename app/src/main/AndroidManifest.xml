@@ -22,6 +22,12 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Lien interne vers un match (widget Matchs du jour). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="leaguehub" android:host="match" />
+            </intent-filter>
         </activity>
 
         <receiver
@@ -33,6 +39,17 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/favorite_club_widget" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.TodayMatchesWidgetReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/today_matches_widget" />
         </receiver>
 
         <!-- Langue choisie dans l'app, mémorisée par AppCompat sur Android < 13. -->
