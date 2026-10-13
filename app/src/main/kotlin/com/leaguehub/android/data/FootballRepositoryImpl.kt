@@ -124,6 +124,15 @@ class FootballRepositoryImpl @Inject constructor(
 
     // --- Buteurs, actualités (cache JSON) ---
 
+    override suspend fun seasonMatches(league: LeagueConfig): Cached<List<Match>> =
+        cachedBlob("season:${league.slug}", ListSerializer(Match.serializer())) {
+            // Les championnats démarrent en août : saison 2026-27 = août 2026 → mois en cours.
+            val now = YearMonth.now(PARIS)
+            val start = YearMonth.of(if (now.monthValue >= 7) now.year else now.year - 1, 8)
+            val months = generateSequence(start) { it.plusMonths(1) }.takeWhile { it <= now }.toList()
+            scoreboardMonths(league.espnCode, months).filter { it.state == MatchState.POST }
+        }
+
     override suspend fun leaders(league: LeagueConfig): Cached<Leaders> =
         cachedBlob("leaders:${league.slug}", Leaders.serializer()) { api.statistics(league.espnCode).toLeaders() }
 
