@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -27,6 +26,7 @@ data class ClubUiState(
     val failed: Boolean = false,
     val palmares: ClubPalmares? = null,
     val isFavorite: Boolean = false,
+    val isFollowed: Boolean = false,
 )
 
 @HiltViewModel
@@ -54,13 +54,14 @@ class ClubViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    val state: StateFlow<ClubUiState> = combine(form, palmares, settings.settings.map { it.favorite?.teamId }) { f, p, fav ->
+    val state: StateFlow<ClubUiState> = combine(form, palmares, settings.settings) { f, p, s ->
         val success = (f as? PollResult.Success)?.value
         ClubUiState(
             form = success ?: lastForm,
             failed = f is PollResult.Failure && lastForm == null,
             palmares = p,
-            isFavorite = fav == teamId,
+            isFavorite = s.favorite?.teamId == teamId,
+            isFollowed = s.followed.any { it.club.teamId == teamId },
         ).also { if (success != null) lastForm = success }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ClubUiState())
 
@@ -69,6 +70,15 @@ class ClubViewModel @Inject constructor(
     }
 
     fun retry() { attempt.value++ }
+
+    /** Suivre le club : ses matchs sur l'accueil et ses notifications, sans en faire le favori. */
+    fun toggleFollow() {
+        val team = state.value.form?.team ?: return
+        viewModelScope.launch {
+            if (state.value.isFollowed) settings.unfollow(team.id)
+            else settings.follow(FavoriteClub(team.id, team.name, team.logo, league.slug, team.color))
+        }
+    }
 
     fun toggleFavorite() {
         val team = state.value.form?.team ?: return
