@@ -1,5 +1,20 @@
 package com.leaguehub.android.widget
 
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import com.leaguehub.android.app.work.LiveWidgetWorker
+import com.leaguehub.android.domain.model.TimelineKind
+import com.leaguehub.android.domain.model.TimelineEvent
+import com.leaguehub.android.domain.model.Side
+import com.leaguehub.android.domain.model.MatchState
+import com.leaguehub.android.domain.model.MatchDetail
+import com.leaguehub.android.domain.model.ClubMatch
+import androidx.glance.text.TextAlign
+import androidx.glance.layout.RowScope
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -46,7 +61,6 @@ import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.leaguehub.android.R
 import com.leaguehub.android.app.MainActivity
-import com.leaguehub.android.app.work.SyncWorker
 import com.leaguehub.android.core.util.formatShortDate
 import com.leaguehub.android.core.util.formatTime
 import com.leaguehub.android.domain.leagueconfig.Competitions
@@ -59,14 +73,20 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 /**
- * Ce que le widget affiche, préparé par le SyncWorker : le widget ne fait aucun appel réseau,
+ * Ce que le widget affiche, préparé par [WidgetUpdater] : le widget ne fait aucun appel réseau,
  * les logos sont donc téléchargés ici et stockés en petits PNG dans le stockage de l'app.
  */
 object WidgetState {
     private const val PREFS = "widget"
     private const val LOGO_PX = 128 // assez net pour 44 dp, assez léger pour les RemoteViews
     /** À incrémenter quand le format change : une donnée d'un autre format déclenche une resynchro. */
-    private const val FORMAT = 3
+    private const val FORMAT = 4
+    /** Après le coup de sifflet, le score final reste affiché tant de temps après le coup d'envoi. */
+    const val FINAL_SHOWN_FOR_MS = 4 * 60 * 60_000L
+
+    /** Incrémenté à chaque enregistrement : le widget affiché se redessine aussitôt avec les nouvelles données. */
+    private val _version = MutableStateFlow(0)
+    val version: StateFlow<Int> = _version.asStateFlow()
 
     private fun logoFile(context: Context, name: String) = File(File(context.filesDir, "widget").apply { mkdirs() }, "$name.png")
 
@@ -74,8 +94,23 @@ object WidgetState {
     private fun TeamForm.encodedForm(): String =
         results.reversed().mapNotNull { it.outcome?.name?.first() }.joinToString("")
 
-    suspend fun save(context: Context, favorite: FavoriteClub, form: TeamForm, opponentForm: TeamForm?) {
-        val match = form.live ?: form.next
+    /** Match à montrer : en cours, sinon terminé il y a peu (score final), sinon le prochain. */
+    fun shownMatch(form: TeamForm, now: Long = System.currentTimeMillis()): ClubMatch? =
+        form.live ?: form.results.firstOrNull()?.takeIf { now - it.kickoff < FINAL_SHOWN_FOR_MS } ?: form.next
+
+    suspend fun save(context: Context, favorite: FavoriteClub, form: TeamForm, opponentForm: TeamForm?, detail: MatchDetail?) {
+        val match = shownMatch(form)
+        val live = match != null && match == form.live
+        val finished = match != null && !live && match.state == MatchState.POST
+        // Le détail du match (résumé ESPN) est plus frais que le calendrier du club : score, minute, buteurs.
+        val d = detail?.takeIf { match != null && it.match.id == match.id }
+        val ourSide = if (match?.home == true) Side.HOME else Side.AWAY
+        val theirSide = if (ourSide == Side.HOME) Side.AWAY else Side.HOME
+        val goals = d?.timeline.orEmpty().filter {
+            it.kind == TimelineKind.GOAL || it.kind == TimelineKind.PENALTY_GOAL || it.kind == TimelineKind.OWN_GOAL
+        }
+        fun scorer(e: TimelineEvent) = (e.players.firstOrNull() ?: e.label) + " " + e.minute +
+            when (e.kind) { TimelineKind.PENALTY_GOAL -> " (p)"; TimelineKind.OWN_GOAL -> " (csc)"; else -> "" }
         val competition = match?.let { m -> Competitions.ALL.firstOrNull { it.espnCode == m.competitionCode } }
 
         downloadLogo(context, favorite.logo ?: form.team.logo, "club")
@@ -98,17 +133,23 @@ object WidgetState {
                 putString("date", formatShortDate(match.kickoff))
                 putLong("kickoff", match.kickoff)
                 match.venue?.let { putString("venue", it) }
-                putBoolean("live", match == form.live)
-                putString("clock", match.clock)
-                putInt("goalsFor", match.goalsFor ?: 0)
-                putInt("goalsAgainst", match.goalsAgainst ?: 0)
+                putBoolean("live", live)
+                putBoolean("finished", finished)
+                putString("clock", d?.match?.clock?.takeIf { it.isNotEmpty() } ?: match.clock)
+                putInt("goalsFor", d?.match?.side(ourSide)?.score ?: match.goalsFor ?: 0)
+                putInt("goalsAgainst", d?.match?.side(theirSide)?.score ?: match.goalsAgainst ?: 0)
+                putString("scorersFor", goals.filter { it.side == ourSide }.joinToString("\n", transform = ::scorer))
+                putString("scorersAgainst", goals.filter { it.side == theirSide }.joinToString("\n", transform = ::scorer))
             }
-        }.apply()
+            putLong("updatedAt", System.currentTimeMillis())
+        }.commit() // commit : le widget relit juste après
+        _version.value++
     }
 
     fun clear(context: Context) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().putInt("format", FORMAT).apply()
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().putInt("format", FORMAT).commit()
         listOf("club", "opponent", "competition").forEach { logoFile(context, it).delete() }
+        _version.value++
     }
 
     /** Données absentes ou d'une ancienne version de l'app : il faut resynchroniser. */
@@ -143,10 +184,17 @@ object WidgetState {
         val kickoff: Long,
         val venue: String?,
         val live: Boolean,
+        /** Match terminé il y a peu : score final affiché. */
+        val finished: Boolean,
         val clock: String,
         val goalsFor: Int,
         val goalsAgainst: Int,
-    )
+        val scorersFor: List<String>,
+        val scorersAgainst: List<String>,
+    ) {
+        /** Un score est à afficher (en direct ou final). */
+        val scored: Boolean get() = live || finished
+    }
 
     fun read(context: Context): Snapshot {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -169,9 +217,12 @@ object WidgetState {
             kickoff = p.getLong("kickoff", 0),
             venue = p.getString("venue", null),
             live = p.getBoolean("live", false),
+            finished = p.getBoolean("finished", false),
             clock = p.getString("clock", "").orEmpty(),
             goalsFor = p.getInt("goalsFor", 0),
             goalsAgainst = p.getInt("goalsAgainst", 0),
+            scorersFor = p.getString("scorersFor", "").orEmpty().split("\n").filter { it.isNotBlank() },
+            scorersAgainst = p.getString("scorersAgainst", "").orEmpty().split("\n").filter { it.isNotBlank() },
         )
     }
 }
@@ -185,6 +236,8 @@ private val Live = ColorProvider(day = Color(0xFFDC2626), night = Color(0xFFF871
 private val Border = ColorProvider(day = Color.Black.copy(alpha = 0.08f), night = Color.White.copy(alpha = 0.1f))
 /** Texte secondaire : blanc à 80 % la nuit plutôt qu'une couleur primaire peu lisible. */
 private val Secondary = ColorProvider(day = Color(0xFF475569), night = Color.White.copy(alpha = 0.8f))
+private val LivePill = ColorProvider(day = Color(0x1FDC2626), night = Color(0x33F87171))
+private val NeutralPill = ColorProvider(day = Color(0x0F000000), night = Color(0x1FFFFFFF))
 
 /** Pastilles de forme désaturées (même logique que dans l'app). */
 private fun formColors(code: Char): Pair<ColorProvider, ColorProvider> = when (code) {
@@ -250,6 +303,12 @@ private class Metrics(private val widget: DpSize, private val fontScale: Float) 
     }
     val compact = layout != WidgetLayout.DETAILED
 
+    /** Lignes de buteurs qui tiennent sous le tableau de score (0 à 4). */
+    fun scorerLines(): Int {
+        val used = line(12f) * scale + 8f + maxOf(40f * scale + 4f + line(12f) * scale, line(34f) * scale) + 8f
+        return ((detailedH - used - SLACK) / line(11f) / scale).toInt().coerceIn(0, 4)
+    }
+
     private companion object {
         /** Hauteur d'une ligne ≈ 1,3 × la taille de police. */
         const val LINE_HEIGHT = 1.3f
@@ -277,10 +336,12 @@ class FavoriteClubWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        // Données d'un ancien format (mise à jour de l'app) : on les remplace sans attendre la synchro périodique.
-        if (WidgetState.isOutdated(context)) SyncWorker.refreshNow(context)
-        val snapshot = WidgetState.read(context)
+        // Données d'un ancien format (mise à jour de l'app) : on les remplace tout de suite.
+        if (WidgetState.isOutdated(context)) LiveWidgetWorker.start(context)
         provideContent {
+            // Relu à chaque enregistrement : un but, un changement de club… se voient sans attendre.
+            val version by WidgetState.version.collectAsState()
+            val snapshot = remember(version) { WidgetState.read(context) }
             GlanceTheme { Content(context, snapshot) }
         }
     }
@@ -306,9 +367,9 @@ class FavoriteClubWidget : GlanceAppWidget() {
                     !s.hasMatch -> NoMatch(context, s, m)
                     else -> when (m.layout) {
                         WidgetLayout.TINY -> Tiny(s, m)
-                        WidgetLayout.COMPACT -> Compact(s, m)
+                        WidgetLayout.COMPACT -> Compact(context, s, m)
                         WidgetLayout.ROW -> WideRow(context, s, m)
-                        WidgetLayout.SQUARE -> Square(s, m)
+                        WidgetLayout.SQUARE -> Square(context, s, m)
                         WidgetLayout.DETAILED -> Detailed(context, s, m)
                     }
                 }
@@ -330,6 +391,8 @@ class FavoriteClubWidget : GlanceAppWidget() {
      */
     @Composable
     private fun Detailed(context: Context, s: WidgetState.Snapshot, m: Metrics) {
+        // Pendant le match (et juste après) : tableau de score.
+        if (s.scored) { Scoreboard(context, s, m); return }
         Column(GlanceModifier.fillMaxSize()) {
             // En-tête : compétition à gauche, heure (ou minute de jeu) en haut à droite.
             Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -375,6 +438,94 @@ class FavoriteClubWidget : GlanceAppWidget() {
         }
     }
 
+    /**
+     * Tableau de score, en direct ou final :
+     * ```
+     * [LDC] Ligue des champions          ● 67'
+     *   [logo]          2 - 1          [logo]
+     *   Bayern                          Viking
+     * ⚽ Kane 23'                  Østbø 51' ⚽
+     * ⚽ Musiala 60'
+     * ```
+     */
+    @Composable
+    private fun Scoreboard(context: Context, s: WidgetState.Snapshot, m: Metrics) {
+        val logo = m.dp(40f)
+        val scorerLines = m.scorerLines()
+        Column(GlanceModifier.fillMaxSize()) {
+            Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Row(GlanceModifier.defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
+                    s.competitionLogo?.let { Logo(it, m.dp(16f)); Spacer(GlanceModifier.width(6.dp)) }
+                    Text(
+                        s.competition,
+                        style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = m.sp(11f), fontWeight = FontWeight.Medium),
+                        maxLines = 1,
+                    )
+                }
+                Box(
+                    GlanceModifier.cornerRadius(10.dp).background(if (s.live) LivePill else NeutralPill)
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                ) {
+                    Text(
+                        if (s.live) "● " + s.clock.ifEmpty { context.getString(R.string.live) } else context.getString(R.string.status_final),
+                        style = TextStyle(color = if (s.live) Live else Secondary, fontSize = m.sp(12f), fontWeight = FontWeight.Bold),
+                        maxLines = 1,
+                    )
+                }
+            }
+            Spacer(GlanceModifier.defaultWeight())
+            // Le favori à gauche, l'adversaire à droite ; score en très grand au centre.
+            Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                ScoreSide(s.clubLogo, s.club.orEmpty(), logo, m)
+                Text(
+                    "${s.goalsFor} - ${s.goalsAgainst}",
+                    style = TextStyle(
+                        color = if (s.live) Live else GlanceTheme.colors.onSurface,
+                        fontSize = m.sp(34f), fontWeight = FontWeight.Bold,
+                    ),
+                    maxLines = 1,
+                )
+                ScoreSide(s.opponentLogo, s.opponentShort, logo, m)
+            }
+            Spacer(GlanceModifier.defaultWeight())
+            // Buteurs des deux équipes, autant de lignes que la hauteur le permet.
+            if (scorerLines > 0 && (s.scorersFor.isNotEmpty() || s.scorersAgainst.isNotEmpty())) {
+                Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                    Scorers(s.scorersFor, scorerLines, TextAlign.Start, m)
+                    Spacer(GlanceModifier.width(8.dp))
+                    Scorers(s.scorersAgainst, scorerLines, TextAlign.End, m)
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun RowScope.ScoreSide(logo: Bitmap?, name: String, size: Dp, m: Metrics) {
+        Column(GlanceModifier.defaultWeight(), horizontalAlignment = Alignment.CenterHorizontally) {
+            if (logo != null) Logo(logo, size) else Spacer(GlanceModifier.size(size))
+            Spacer(GlanceModifier.height(4.dp))
+            Text(
+                name,
+                style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = m.sp(12f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
+                maxLines = 1,
+            )
+        }
+    }
+
+    @Composable
+    private fun RowScope.Scorers(lines: List<String>, max: Int, align: TextAlign, m: Metrics) {
+        Column(GlanceModifier.defaultWeight(), horizontalAlignment = if (align == TextAlign.End) Alignment.End else Alignment.Start) {
+            val shown = if (lines.size > max) lines.take(max - 1) + "+${lines.size - max + 1}" else lines
+            shown.forEach { line ->
+                Text(
+                    if (align == TextAlign.End) "$line ⚽" else "⚽ $line",
+                    style = TextStyle(color = Secondary, fontSize = m.sp(11f), textAlign = align),
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+
     /** Pied : stade (ou domicile / extérieur) et jour relatif du match. */
     @Composable
     private fun Footer(context: Context, s: WidgetState.Snapshot, m: Metrics) {
@@ -394,6 +545,19 @@ class FavoriteClubWidget : GlanceAppWidget() {
                 )
             }
         }
+    }
+
+    /** Statut court : minute en direct, « Terminé », ou heure du coup d'envoi. */
+    private fun statusText(context: Context, s: WidgetState.Snapshot): String = when {
+        s.live -> "● " + s.clock.ifEmpty { context.getString(R.string.live) }
+        s.finished -> context.getString(R.string.status_final)
+        else -> s.time
+    }
+
+    private fun statusColor(s: WidgetState.Snapshot): ColorProvider = when {
+        s.live -> Live
+        s.finished -> Secondary
+        else -> Accent
     }
 
     /** « Aujourd'hui », « Demain », « Dans 3 jours » : calculé à l'affichage, jamais périmé d'un jour. */
@@ -419,8 +583,8 @@ class FavoriteClubWidget : GlanceAppWidget() {
                 Spacer(GlanceModifier.height(4.dp))
             }
             Text(
-                if (s.live) "${s.goalsFor}-${s.goalsAgainst}" else s.time,
-                style = TextStyle(color = if (s.live) Live else Accent, fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                if (s.scored) "${s.goalsFor}-${s.goalsAgainst}" else s.time,
+                style = TextStyle(color = statusColor(s), fontSize = 14.sp, fontWeight = FontWeight.Bold),
                 maxLines = 1,
             )
         }
@@ -441,8 +605,8 @@ class FavoriteClubWidget : GlanceAppWidget() {
                 if (m.rowTwoLines) Row(verticalAlignment = Alignment.CenterVertically) {
                     s.competitionLogo?.let { Logo(it, 12.dp); Spacer(GlanceModifier.width(4.dp)) }
                     Text(
-                        if (s.live) "${s.goalsFor} – ${s.goalsAgainst}" else s.competition,
-                        style = TextStyle(color = if (s.live) Live else Secondary, fontSize = 11.sp, fontWeight = if (s.live) FontWeight.Bold else FontWeight.Normal),
+                        if (s.scored) "${s.goalsFor} – ${s.goalsAgainst}" else s.competition,
+                        style = TextStyle(color = if (s.live) Live else Secondary, fontSize = 11.sp, fontWeight = if (s.scored) FontWeight.Bold else FontWeight.Normal),
                         maxLines = 1,
                     )
                 }
@@ -450,25 +614,25 @@ class FavoriteClubWidget : GlanceAppWidget() {
             Spacer(GlanceModifier.width(10.dp))
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    if (s.live) "● " + s.clock else s.time,
-                    style = TextStyle(color = if (s.live) Live else Accent, fontSize = 18.sp, fontWeight = FontWeight.Bold),
+                    statusText(context, s),
+                    style = TextStyle(color = statusColor(s), fontSize = 18.sp, fontWeight = FontWeight.Bold),
                     maxLines = 1,
                 )
-                if (!s.live && m.rowTwoLines) Text(relativeDay(context, s.kickoff), style = TextStyle(color = Secondary, fontSize = 11.sp), maxLines = 1)
+                if (!s.scored && m.rowTwoLines) Text(relativeDay(context, s.kickoff), style = TextStyle(color = Secondary, fontSize = 11.sp), maxLines = 1)
             }
         }
     }
 
     /** 2×2 : affiche vertical, heure en haut, logos face à face au centre, adversaire et date en bas. */
     @Composable
-    private fun Square(s: WidgetState.Snapshot, m: Metrics) {
+    private fun Square(context: Context, s: WidgetState.Snapshot, m: Metrics) {
         Column(GlanceModifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 s.competitionLogo?.let { Logo(it, 16.dp) }
                 Spacer(GlanceModifier.defaultWeight())
                 Text(
-                    if (s.live) "● " + s.clock else s.time,
-                    style = TextStyle(color = if (s.live) Live else Accent, fontSize = 16.sp, fontWeight = FontWeight.Bold),
+                    statusText(context, s),
+                    style = TextStyle(color = statusColor(s), fontSize = 16.sp, fontWeight = FontWeight.Bold),
                     maxLines = 1,
                 )
             }
@@ -476,10 +640,10 @@ class FavoriteClubWidget : GlanceAppWidget() {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 s.clubLogo?.let { Logo(it, m.squareLogo) }
                 Text(
-                    if (s.live) "  ${s.goalsFor}-${s.goalsAgainst}  " else "  vs  ",
+                    if (s.scored) "  ${s.goalsFor}-${s.goalsAgainst}  " else "  vs  ",
                     style = TextStyle(
-                        color = if (s.live) Live else GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = if (s.live) 16.sp else 12.sp, fontWeight = FontWeight.Bold,
+                        color = if (s.live) Live else if (s.scored) GlanceTheme.colors.onSurface else GlanceTheme.colors.onSurfaceVariant,
+                        fontSize = if (s.scored) 18.sp else 12.sp, fontWeight = FontWeight.Bold,
                     ),
                 )
                 s.opponentLogo?.let { Logo(it, m.squareLogo) }
@@ -490,13 +654,13 @@ class FavoriteClubWidget : GlanceAppWidget() {
                 style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Bold),
                 maxLines = 1,
             )
-            if (!s.live) Text(s.date, style = TextStyle(color = Secondary, fontSize = 11.sp), maxLines = 1)
+            if (!s.scored) Text(s.date, style = TextStyle(color = Secondary, fontSize = 11.sp), maxLines = 1)
         }
     }
 
     /** Mise en page compacte (2×1) : logos, adversaire, heure à droite. */
     @Composable
-    private fun Compact(s: WidgetState.Snapshot, m: Metrics) {
+    private fun Compact(context: Context, s: WidgetState.Snapshot, m: Metrics) {
         Row(GlanceModifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
             s.clubLogo?.let { Logo(it, minOf(m.rowLogo, 24.dp)); Spacer(GlanceModifier.width(4.dp)) }
             s.opponentLogo?.let { Logo(it, minOf(m.rowLogo, 24.dp)); Spacer(GlanceModifier.width(8.dp)) }
@@ -507,14 +671,14 @@ class FavoriteClubWidget : GlanceAppWidget() {
                     maxLines = 1,
                 )
                 if (m.rowTwoLines) Text(
-                    if (s.live) "${s.goalsFor} – ${s.goalsAgainst}" else s.date,
-                    style = TextStyle(color = Secondary, fontSize = 11.sp),
+                    if (s.scored) statusText(context, s) else s.date,
+                    style = TextStyle(color = if (s.live) Live else Secondary, fontSize = 11.sp),
                     maxLines = 1,
                 )
             }
             Text(
-                if (s.live) s.clock else s.time,
-                style = TextStyle(color = if (s.live) Live else Accent, fontSize = 16.sp, fontWeight = FontWeight.Bold),
+                if (s.scored) "${s.goalsFor}-${s.goalsAgainst}" else s.time,
+                style = TextStyle(color = statusColor(s), fontSize = 16.sp, fontWeight = FontWeight.Bold),
             )
         }
     }
@@ -619,6 +783,6 @@ class FavoriteClubWidgetReceiver : GlanceAppWidgetReceiver() {
     /** Premier widget posé sur l'écran d'accueil : on le remplit tout de suite. */
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
-        SyncWorker.refreshNow(context)
+        LiveWidgetWorker.start(context)
     }
 }
