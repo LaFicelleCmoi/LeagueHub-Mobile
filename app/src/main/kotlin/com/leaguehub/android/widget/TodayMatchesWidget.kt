@@ -12,10 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.async
-import dagger.hilt.components.SingletonComponent
-import dagger.hilt.android.EntryPointAccessors
-import dagger.hilt.InstallIn
-import dagger.hilt.EntryPoint
 import com.leaguehub.android.domain.schedule.PARIS
 import com.leaguehub.android.domain.repository.FootballRepository
 import com.leaguehub.android.domain.leagueconfig.Competitions
@@ -79,7 +75,7 @@ import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.leaguehub.android.R
 import com.leaguehub.android.app.MainActivity
-import com.leaguehub.android.app.work.SyncWorker
+import com.leaguehub.android.app.work.LiveWidgetWorker
 import com.leaguehub.android.core.util.formatTime
 import com.leaguehub.android.domain.leagueconfig.LeagueConfig
 import com.leaguehub.android.domain.model.Match
@@ -107,13 +103,6 @@ data class TodayItem(
     val awayAbbr: String,
     val awayScore: Int?,
 )
-
-/** Accès au dépôt depuis le widget (hors écrans Hilt). */
-@EntryPoint
-@InstallIn(SingletonComponent::class)
-interface TodayWidgetEntryPoint {
-    fun football(): FootballRepository
-}
 
 /**
  * Données du widget « Matchs du jour » : liste JSON + logos en petits PNG (téléchargés une fois).
@@ -144,6 +133,11 @@ object TodayWidgetState {
         prefs(context).getString("items", null)?.let { runCatching { json.decodeFromString(serializer, it) }.getOrNull() }
 
     fun updatedAt(context: Context): Long = prefs(context).getLong("updatedAt", 0)
+
+    fun hasLive(context: Context): Boolean = read(context).orEmpty().any { it.state == MatchState.IN }
+
+    /** Prochain coup d'envoi parmi les matchs du jour, pour réveiller le widget à l'heure. */
+    fun nextKickoff(context: Context): Long? = read(context).orEmpty().filter { it.state == MatchState.PRE }.minOfOrNull { it.kickoff }
 
     /** À recharger : jamais chargé, d'un autre jour, ou trop vieux (2 min en direct, 10 min sinon). */
     fun isStale(context: Context, now: Long = System.currentTimeMillis()): Boolean {
@@ -217,8 +211,7 @@ object TodayWidgetState {
     }
 }
 
-private fun football(context: Context): FootballRepository =
-    EntryPointAccessors.fromApplication(context.applicationContext, TodayWidgetEntryPoint::class.java).football()
+private fun football(context: Context): FootballRepository = widgetEntryPoint(context).football()
 
 // Couleurs jour / nuit, les mêmes que le widget du club favori.
 private val Accent = ColorProvider(day = Color(0xFFB45309), night = Color(0xFFFACC15))
@@ -503,6 +496,6 @@ class TodayMatchesWidgetReceiver : GlanceAppWidgetReceiver() {
 
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
-        SyncWorker.refreshNow(context)
+        LiveWidgetWorker.start(context)
     }
 }
