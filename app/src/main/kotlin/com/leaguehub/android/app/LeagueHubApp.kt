@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.leaguehub.android.app.notifications.Notifications
+import com.leaguehub.android.app.work.LiveWidgetWorker
 import com.leaguehub.android.app.work.SyncWorker
 import com.leaguehub.android.domain.repository.SettingsRepository
 import dagger.hilt.android.HiltAndroidApp
@@ -34,6 +35,8 @@ class LeagueHubApp : Application(), Configuration.Provider {
         appScope.launch {
             settings.settings.map { it.favorite?.teamId }.distinctUntilChanged().collect {
                 SyncWorker.refreshNow(this@LeagueHubApp)
+                // Widget du club : mis à jour en quelques secondes, sans attendre la synchro complète.
+                LiveWidgetWorker.start(this@LeagueHubApp)
             }
         }
     }
