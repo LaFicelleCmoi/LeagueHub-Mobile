@@ -52,6 +52,11 @@
                 android:resource="@xml/today_matches_widget" />
         </receiver>
 
+        <!-- Battement des widgets pendant les matchs (alarme système). -->
+        <receiver
+            android:name=".widget.WidgetTickReceiver"
+            android:exported="false" />
+
         <!-- Langue choisie dans l'app, mémorisée par AppCompat sur Android < 13. -->
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
