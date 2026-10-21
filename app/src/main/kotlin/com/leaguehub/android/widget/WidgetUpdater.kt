@@ -6,6 +6,7 @@ import androidx.glance.appwidget.updateAll
 import com.leaguehub.android.domain.leagueconfig.Competitions
 import com.leaguehub.android.domain.model.FavoriteClub
 import com.leaguehub.android.domain.model.MatchState
+import com.leaguehub.android.domain.model.Side
 import com.leaguehub.android.domain.model.TeamForm
 import com.leaguehub.android.domain.repository.FootballRepository
 import com.leaguehub.android.domain.repository.SettingsRepository
@@ -32,6 +33,10 @@ data class FavoriteRefresh(
     val live: Boolean,
     /** Prochain coup d'envoi du club, pour réveiller le widget à l'heure. */
     val nextKickoff: Long?,
+    /** Score et minute du résumé du match en cours (plus frais que la fiche du club), pour les notifications. */
+    val liveFor: Int? = null,
+    val liveAgainst: Int? = null,
+    val clock: String? = null,
 )
 
 /** Mise à jour des deux widgets, partagée par la synchro périodique et le suivi en direct. */
@@ -61,7 +66,14 @@ object WidgetUpdater {
         }
         WidgetState.save(context, favorite, form, opponentForm, detail)
         FavoriteClubWidget().updateAll(context)
-        return FavoriteRefresh(form, live = form.live != null, nextKickoff = form.next?.kickoff)
+        val ours = if (shown?.home == true) Side.HOME else Side.AWAY
+        val fresh = detail?.match?.takeIf { form.live != null && it.id == form.live.id }
+        return FavoriteRefresh(
+            form, live = form.live != null, nextKickoff = form.next?.kickoff,
+            liveFor = fresh?.side(ours)?.score,
+            liveAgainst = fresh?.side(if (ours == Side.HOME) Side.AWAY else Side.HOME)?.score,
+            clock = fresh?.clock,
+        )
     }
 
     /** Le widget « Matchs du jour » est-il posé sur l'écran d'accueil ? */
