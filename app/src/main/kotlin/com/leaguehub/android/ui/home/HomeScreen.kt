@@ -253,13 +253,17 @@ private fun FavoriteHero(
                 }
                 return@AppCard
             }
-            // Le favori à gauche, l'adversaire à droite, quel que soit le terrain.
+            // Le club qui reçoit à gauche, comme partout ailleurs (score domicile – extérieur).
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                HeroSide(fav.logo, fav.name, Modifier.weight(1f))
+                val favoriteSide: @Composable () -> Unit = { HeroSide(fav.logo, fav.name, Modifier.weight(1f)) }
+                val opponentSide: @Composable () -> Unit = { HeroSide(match.opponent.logo, match.opponent.shortName, Modifier.weight(1f)) }
+                if (match.home) favoriteSide() else opponentSide()
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 8.dp)) {
                     if (live != null) {
+                        val goalsFor = live.goalsFor ?: 0
+                        val goalsAgainst = live.goalsAgainst ?: 0
                         Text(
-                            "${live.goalsFor ?: 0} – ${live.goalsAgainst ?: 0}",
+                            if (live.home) "$goalsFor – $goalsAgainst" else "$goalsAgainst – $goalsFor",
                             style = MaterialTheme.typography.displayMedium, color = LocalSportColors.current.live,
                         )
                         Pill(statusLabel(live.statusName, live.state, live.kickoff, live.clock), LocalSportColors.current.live, dot = true)
@@ -270,7 +274,7 @@ private fun FavoriteHero(
                         Countdown(next.kickoff)
                     }
                 }
-                HeroSide(match.opponent.logo, match.opponent.shortName, Modifier.weight(1f))
+                if (match.home) opponentSide() else favoriteSide()
             }
             Spacer(Modifier.height(16.dp))
             Text(
