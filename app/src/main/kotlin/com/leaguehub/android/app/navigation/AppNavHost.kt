@@ -69,7 +69,7 @@ import com.leaguehub.android.ui.club.ClubScreen
 import com.leaguehub.android.ui.home.HomeScreen
 import com.leaguehub.android.ui.ldctracker.LdcScreen
 import com.leaguehub.android.ui.league.LeagueScreen
-import com.leaguehub.android.ui.matchdetail.MatchDetailScreen
+import com.leaguehub.android.ui.matchdetail.MatchDetailRoute
 import com.leaguehub.android.ui.search.SearchScreen
 import com.leaguehub.android.ui.settings.SettingsScreen
 
@@ -198,7 +198,7 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
                 ClubScreen(onMatch = ::openMatch)
             }
             composable(Routes.MATCH, deepLinks = listOf(navDeepLink { uriPattern = "leaguehub://match/{competition}/{eventId}" })) {
-                MatchDetailScreen()
+                MatchDetailRoute()
             }
         }
     }
