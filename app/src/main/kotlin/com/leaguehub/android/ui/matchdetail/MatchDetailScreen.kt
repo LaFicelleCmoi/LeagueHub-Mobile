@@ -130,7 +130,9 @@ private fun DetailContent(d: MatchDetail) {
                 }
             }
         }
-        if (d.lineups.size == 2) {
+        // Avant le match, ESPN renvoie les deux équipes sans joueurs : rien à montrer.
+        val hasLineups = d.lineups.size == 2 && d.lineups.any { it.players.isNotEmpty() }
+        if (hasLineups) {
             item { SectionTitle(stringResource(R.string.lineups)) }
             item {
                 AppCard(Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
@@ -140,7 +142,7 @@ private fun DetailContent(d: MatchDetail) {
                 }
             }
         }
-        if (timeline.isEmpty() && d.stats.isEmpty() && d.lineups.isEmpty()) {
+        if (timeline.isEmpty() && d.stats.isEmpty() && !hasLineups) {
             item { EmptyState(stringResource(R.string.no_details)) }
         }
     }
