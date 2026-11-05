@@ -27,82 +27,53 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewModelScope
 import com.leaguehub.android.R
+import com.leaguehub.android.core.theme.LeagueHubTheme
 import com.leaguehub.android.core.theme.LocalSportColors
 import com.leaguehub.android.core.util.formatDateTime
-import com.leaguehub.android.domain.live.LIVE_POLL_INTERVAL
-import com.leaguehub.android.domain.live.PollResult
-import com.leaguehub.android.domain.live.pollingFlow
 import com.leaguehub.android.domain.model.Lineup
+import com.leaguehub.android.domain.model.LineupPlayer
+import com.leaguehub.android.domain.model.Match
 import com.leaguehub.android.domain.model.MatchDetail
+import com.leaguehub.android.domain.model.MatchSide
 import com.leaguehub.android.domain.model.MatchState
 import com.leaguehub.android.domain.model.MatchStat
 import com.leaguehub.android.domain.model.Side
+import com.leaguehub.android.domain.model.Team
 import com.leaguehub.android.domain.model.TimelineEvent
 import com.leaguehub.android.domain.model.TimelineKind
-import com.leaguehub.android.domain.repository.FootballRepository
+import com.leaguehub.android.domain.repository.ThemeMode
 import com.leaguehub.android.ui.components.ErrorState
 import com.leaguehub.android.ui.components.LoadingState
 import com.leaguehub.android.ui.components.SectionTitle
 import com.leaguehub.android.ui.components.TeamLogo
 import com.leaguehub.android.ui.components.statusLabel
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.stateIn
-import javax.inject.Inject
 
-@HiltViewModel
-class MatchDetailViewModel @Inject constructor(
-    savedState: SavedStateHandle,
-    private val repo: FootballRepository,
-) : ViewModel() {
-    private val competition = savedState.get<String>("competition").orEmpty()
-    private val eventId = savedState.get<String>("eventId").orEmpty()
-    private val attempt = MutableStateFlow(0)
-
-    /** Relu toutes les 20 s pendant le match, toutes les 10 min sinon. */
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    val detail = attempt.flatMapLatest {
-        pollingFlow(
-            delayFor = { d: MatchDetail, _ -> if (d.match.state == MatchState.IN) LIVE_POLL_INTERVAL else 10 * 60_000L },
-            fetch = { repo.matchDetail(competition, eventId) },
-        )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-
-    fun retry() { attempt.value++ }
+/** Point d'entrée de la navigation : relie l'écran à son ViewModel. */
+@Composable
+fun MatchDetailRoute(viewModel: MatchDetailViewModel = hiltViewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    MatchDetailScreen(state, onRetry = viewModel::retry)
 }
 
+/** Écran sans état : n'affiche que ce que [state] décrit. */
 @Composable
-fun MatchDetailScreen(viewModel: MatchDetailViewModel = hiltViewModel()) {
-    val result by viewModel.detail.collectAsStateWithLifecycle()
-    // Un détail déjà affiché reste visible si une relecture échoue.
-    var last by remember { mutableStateOf<MatchDetail?>(null) }
-    val fresh = (result as? PollResult.Success)?.value
-    LaunchedEffect(fresh) { if (fresh != null) last = fresh }
-    val shown = fresh ?: last
-    when {
-        shown != null -> DetailContent(shown)
-        result is PollResult.Failure -> ErrorState(onRetry = viewModel::retry)
-        else -> LoadingState()
+fun MatchDetailScreen(state: MatchDetailUiState, onRetry: () -> Unit) {
+    when (state) {
+        is MatchDetailUiState.Content -> DetailContent(state.detail)
+        MatchDetailUiState.Error -> ErrorState(onRetry = onRetry)
+        MatchDetailUiState.Loading -> LoadingState()
     }
 }
 
@@ -285,4 +256,61 @@ private fun LineupColumn(lineup: Lineup, modifier: Modifier) {
             )
         }
     }
+}
+
+// --- Aperçus (Android Studio) ---
+
+private fun previewTeam(id: String, name: String) = Team(id, name, name, name.take(3).uppercase(), logo = null)
+
+private val previewDetail: MatchDetail = run {
+    val home = previewTeam("132", "Bayern Munich")
+    val away = previewTeam("2950", "Mainz")
+    MatchDetail(
+        match = Match(
+            id = "preview", competition = "ger.1", kickoff = 1_794_150_000_000L, state = MatchState.IN,
+            statusName = "STATUS_SECOND_HALF", clock = "67'", venue = "Allianz Arena",
+            home = MatchSide(home, score = 2, winner = false, played = 10, shootout = null),
+            away = MatchSide(away, score = 1, winner = false, played = 10, shootout = null),
+        ),
+        timeline = listOf(
+            TimelineEvent("1", "12'", TimelineKind.GOAL, "Goal", Side.HOME, listOf("H. Kane")),
+            TimelineEvent("2", "34'", TimelineKind.YELLOW_CARD, "Yellow Card", Side.AWAY, listOf("D. da Costa")),
+            TimelineEvent("3", "51'", TimelineKind.GOAL, "Goal", Side.AWAY, listOf("J. Burkardt")),
+            TimelineEvent("4", "60'", TimelineKind.PENALTY_GOAL, "Penalty - Scored", Side.HOME, listOf("H. Kane")),
+        ),
+        stats = listOf(
+            MatchStat("possessionPct", "Possession", "64", "36", share = 0.64f),
+            MatchStat("totalShots", "Shots", "14", "6", share = 0.7f),
+        ),
+        lineups = listOf(Side.HOME to home, Side.AWAY to away).map { (side, team) ->
+            Lineup(
+                side, team, formation = "4-2-3-1",
+                players = listOf(
+                    LineupPlayer("${team.id}-1", "Gardien", "1", "G", starter = true),
+                    LineupPlayer("${team.id}-9", "Attaquant", "9", "F", starter = true),
+                    LineupPlayer("${team.id}-20", "Remplaçant", "20", "M", starter = false),
+                ),
+            )
+        },
+        attendance = 75_000,
+        referee = "F. Zwayer",
+    )
+}
+
+@Preview(name = "Contenu", showBackground = true)
+@Composable
+private fun MatchDetailContentPreview() {
+    LeagueHubTheme(mode = ThemeMode.DARK) { MatchDetailScreen(MatchDetailUiState.Content(previewDetail), onRetry = {}) }
+}
+
+@Preview(name = "Chargement", showBackground = true)
+@Composable
+private fun MatchDetailLoadingPreview() {
+    LeagueHubTheme(mode = ThemeMode.DARK) { MatchDetailScreen(MatchDetailUiState.Loading, onRetry = {}) }
+}
+
+@Preview(name = "Erreur", showBackground = true)
+@Composable
+private fun MatchDetailErrorPreview() {
+    LeagueHubTheme(mode = ThemeMode.DARK) { MatchDetailScreen(MatchDetailUiState.Error, onRetry = {}) }
 }
