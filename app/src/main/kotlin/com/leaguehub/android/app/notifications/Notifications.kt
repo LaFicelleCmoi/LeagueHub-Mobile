@@ -1,6 +1,7 @@
 package com.leaguehub.android.app.notifications
 
 import android.Manifest
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -18,6 +19,10 @@ import com.leaguehub.android.app.MainActivity
 object Notifications {
     private const val CHANNEL_KICKOFF = "kickoff"
     private const val CHANNEL_GOALS = "goals"
+    private const val CHANNEL_BACKGROUND = "background"
+
+    /** Identifiant de la notification discrète du suivi en arrière-plan (Android 11 et moins). */
+    const val BACKGROUND_ID = 0x1EA6
 
     fun createChannels(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
@@ -25,6 +30,8 @@ object Notifications {
             listOf(
                 NotificationChannel(CHANNEL_KICKOFF, context.getString(R.string.channel_kickoff), NotificationManager.IMPORTANCE_DEFAULT),
                 NotificationChannel(CHANNEL_GOALS, context.getString(R.string.channel_goals), NotificationManager.IMPORTANCE_HIGH),
+                // Sans son ni bandeau : n'apparaît qu'avant Android 12, le temps d'une vérification.
+                NotificationChannel(CHANNEL_BACKGROUND, context.getString(R.string.channel_background), NotificationManager.IMPORTANCE_MIN),
             ),
         )
     }
@@ -38,6 +45,16 @@ object Notifications {
 
     fun goal(context: Context, matchId: String, score: String, title: String, text: String) =
         post(context, CHANNEL_GOALS, ("g$matchId$score").hashCode(), title, text)
+
+    /** Notification discrète affichée pendant une vérification en arrière-plan (avant Android 12). */
+    fun background(context: Context): Notification =
+        NotificationCompat.Builder(context, CHANNEL_BACKGROUND)
+            .setSmallIcon(R.drawable.ic_stat_ball)
+            .setContentTitle(context.getString(R.string.notif_background))
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setOngoing(true)
+            .setSilent(true)
+            .build()
 
     private fun post(context: Context, channel: String, id: Int, title: String, text: String) {
         if (!canNotify(context)) return
