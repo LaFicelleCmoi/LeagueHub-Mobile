@@ -25,6 +25,9 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // APK installé à la main (pas de Play Store) : signé avec la clé debug pour
+            // remplacer le build debug sans désinstaller, donc sans perdre les réglages.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
