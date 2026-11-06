@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.leaguehub.android.data.espn.EspnJson
+import com.leaguehub.android.domain.leagueconfig.Competitions
 import com.leaguehub.android.domain.model.FavoriteClub
 import com.leaguehub.android.domain.model.FollowedClub
 import com.leaguehub.android.domain.repository.AppLanguage
@@ -37,6 +38,7 @@ class SettingsRepositoryImpl @Inject constructor(
         val NOTIFY_KICKOFF = booleanPreferencesKey("notify_kickoff")
         val NOTIFY_GOALS = booleanPreferencesKey("notify_goals")
         val FOLLOWED = stringPreferencesKey("followed")
+        val FAVORITE_LEAGUE = stringPreferencesKey("favorite_league")
     }
 
     private val followedSerializer = ListSerializer(FollowedClub.serializer())
@@ -60,6 +62,8 @@ class SettingsRepositoryImpl @Inject constructor(
             notifyKickoff = p[Keys.NOTIFY_KICKOFF] ?: true,
             notifyGoals = p[Keys.NOTIFY_GOALS] ?: true,
             followed = decodeFollowed(p[Keys.FOLLOWED]),
+            // Un slug inconnu (championnat retiré d'une version) retombe sur le comportement par défaut.
+            favoriteLeague = p[Keys.FAVORITE_LEAGUE]?.takeIf { slug -> Competitions.LEAGUES.any { it.slug == slug } },
         )
     }
 
@@ -97,5 +101,11 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setFollowedNotifications(teamId: String, kickoff: Boolean, goals: Boolean) = editFollowed { list ->
         list.map { if (it.club.teamId == teamId) it.copy(notifyKickoff = kickoff, notifyGoals = goals) else it }
+    }
+
+    override suspend fun setFavoriteLeague(slug: String?) {
+        context.settingsStore.edit {
+            if (slug == null) it.remove(Keys.FAVORITE_LEAGUE) else it[Keys.FAVORITE_LEAGUE] = slug
+        }
     }
 }
