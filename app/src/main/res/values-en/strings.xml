@@ -244,4 +244,8 @@
     <string name="background_just_now">just now</string>
     <string name="favorite_league">Favourite league</string>
     <string name="favorite_league_hint">Opens by default in the Leagues tab. Tap it again to remove it.</string>
+    <string name="my_league">My league · %1$s</string>
+    <string name="points_short">%1$d pts</string>
+    <string name="league_live_now">Live now</string>
+    <string name="league_next_day">Next matchday · %1$s</string>
 </resources>
