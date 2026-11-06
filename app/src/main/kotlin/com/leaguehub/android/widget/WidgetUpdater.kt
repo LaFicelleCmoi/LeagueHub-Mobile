@@ -5,6 +5,7 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.updateAll
 import com.leaguehub.android.domain.leagueconfig.Competitions
 import com.leaguehub.android.domain.model.FavoriteClub
+import com.leaguehub.android.domain.model.MatchDetail
 import com.leaguehub.android.domain.model.MatchState
 import com.leaguehub.android.domain.model.Side
 import com.leaguehub.android.domain.model.TeamForm
@@ -42,18 +43,20 @@ data class FavoriteRefresh(
 /** Mise à jour des deux widgets, partagée par la synchro périodique et le suivi en direct. */
 object WidgetUpdater {
 
+    /** Données du club favori, lues sur ESPN avant tout affichage. */
+    class FavoriteData(
+        val form: TeamForm,
+        val opponentForm: TeamForm?,
+        val detail: MatchDetail?,
+        val refresh: FavoriteRefresh,
+    )
+
     /**
-     * Widget du club favori : fiche du club, et pendant / juste après un match le résumé ESPN
-     * (score à jour, minute, buteurs des deux équipes).
-     * @return null si le réseau a échoué (l'affichage précédent est conservé).
+     * Lit la fiche du club et, pendant / juste après un match, le résumé ESPN (score à jour, minute,
+     * buteurs). Ne touche pas au widget : les notifications peuvent partir avant le dessin.
+     * @return null si le réseau a échoué.
      */
-    suspend fun refreshFavorite(context: Context, football: FootballRepository, favorite: FavoriteClub?): FavoriteRefresh? {
-        if (favorite == null) {
-            // Plus de club favori : le widget ne doit pas continuer d'afficher l'ancien.
-            WidgetState.clear(context)
-            FavoriteClubWidget().updateAll(context)
-            return FavoriteRefresh(null, live = false, nextKickoff = null)
-        }
+    suspend fun fetchFavorite(football: FootballRepository, favorite: FavoriteClub): FavoriteData? {
         val league = Competitions.bySlug(favorite.competition) ?: Competitions.UCL
         val form = runCatching { football.teamForm(favorite.teamId, league) }.getOrNull() ?: return null
         val shown = WidgetState.shownMatch(form)
@@ -64,16 +67,41 @@ object WidgetUpdater {
         val opponentForm = shown?.takeIf { it.state == MatchState.PRE }?.let {
             runCatching { football.teamForm(it.opponent.id, league) }.getOrNull()
         }
-        WidgetState.save(context, favorite, form, opponentForm, detail)
-        FavoriteClubWidget().updateAll(context)
         val ours = if (shown?.home == true) Side.HOME else Side.AWAY
         val fresh = detail?.match?.takeIf { form.live != null && it.id == form.live.id }
-        return FavoriteRefresh(
+        val refresh = FavoriteRefresh(
             form, live = form.live != null, nextKickoff = form.next?.kickoff,
             liveFor = fresh?.side(ours)?.score,
             liveAgainst = fresh?.side(if (ours == Side.HOME) Side.AWAY else Side.HOME)?.score,
             clock = fresh?.clock,
         )
+        return FavoriteData(form, opponentForm, detail, refresh)
+    }
+
+    /** Dessine le widget du club avec des données déjà lues (logos téléchargés au passage). */
+    suspend fun renderFavorite(context: Context, favorite: FavoriteClub, data: FavoriteData) {
+        WidgetState.save(context, favorite, data.form, data.opponentForm, data.detail)
+        FavoriteClubWidget().updateAll(context)
+    }
+
+    /** Plus de club favori : le widget ne doit pas continuer d'afficher l'ancien. */
+    suspend fun clearFavorite(context: Context) {
+        WidgetState.clear(context)
+        FavoriteClubWidget().updateAll(context)
+    }
+
+    /**
+     * Widget du club favori : lecture puis affichage.
+     * @return null si le réseau a échoué (l'affichage précédent est conservé).
+     */
+    suspend fun refreshFavorite(context: Context, football: FootballRepository, favorite: FavoriteClub?): FavoriteRefresh? {
+        if (favorite == null) {
+            clearFavorite(context)
+            return FavoriteRefresh(null, live = false, nextKickoff = null)
+        }
+        val data = fetchFavorite(football, favorite) ?: return null
+        renderFavorite(context, favorite, data)
+        return data.refresh
     }
 
     /** Le widget « Matchs du jour » est-il posé sur l'écran d'accueil ? */
