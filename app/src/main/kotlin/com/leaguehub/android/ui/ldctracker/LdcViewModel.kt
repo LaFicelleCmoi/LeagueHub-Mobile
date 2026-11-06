@@ -2,6 +2,7 @@ package com.leaguehub.android.ui.ldctracker
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.leaguehub.android.core.coroutines.ComputationDispatcher
 import com.leaguehub.android.data.ldc.Coefficients2026
 import com.leaguehub.android.data.ldc.Draw2026
 import com.leaguehub.android.data.espn.teamLogo
@@ -32,11 +33,13 @@ import com.leaguehub.android.domain.standings.RankOptions
 import com.leaguehub.android.domain.standings.rankLeaguePhase
 import com.leaguehub.android.ui.common.GoalWatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
@@ -71,6 +74,7 @@ data class LdcUiState(
 class LdcViewModel @Inject constructor(
     private val repo: FootballRepository,
     settings: SettingsRepository,
+    @ComputationDispatcher computation: CoroutineDispatcher,
 ) : ViewModel() {
 
     private val ucl = Competitions.UCL
@@ -79,7 +83,8 @@ class LdcViewModel @Inject constructor(
     private val loaded = MutableStateFlow(false)
     private val sims = MutableStateFlow<Map<String, SimScore>>(emptyMap())
 
-    private val season = repo.uclSeason().stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    // Observés tant que l'écran l'est (+ 5 s) : rien n'est recalculé quand l'onglet n'est pas affiché.
+    private val season = repo.uclSeason().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val goalWatcher = GoalWatcher()
     val goals: SharedFlow<GoalWatcher.Goal> = goalWatcher.events
@@ -93,7 +98,7 @@ class LdcViewModel @Inject constructor(
 
     private val favorite = settings.settings.map { it.favorite?.teamId }
         .onEach { goalWatcher.favoriteId = it }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val engine = season.map { cached ->
         val matches = cached?.data.orEmpty()
@@ -103,7 +108,8 @@ class LdcViewModel @Inject constructor(
         val table = rank(phase)
         val bracket = buildBracket(knockout) { roundOf(it.roundSlug, monthOf(it.kickoff)) }
         Engine(cached?.updatedAt ?: 0, matches, league, phase, table, bracket, simulable(league))
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    }.flowOn(computation) // classement, tableau final : hors du thread de l'interface
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val state: StateFlow<LdcUiState> = combine(
         engine, sims, live, favorite,
@@ -129,7 +135,8 @@ class LdcViewModel @Inject constructor(
             },
             favoriteId = fav,
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LdcUiState())
+    }.flowOn(computation) // simulations : hors du thread de l'interface
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LdcUiState())
 
     init {
         refresh()
