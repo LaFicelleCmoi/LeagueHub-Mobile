@@ -2,6 +2,8 @@ package com.leaguehub.android.ui.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.text.font.FontWeight
+import com.leaguehub.android.domain.model.ClubMatch
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +24,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Stadium
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
@@ -82,6 +85,10 @@ fun HomeScreen(
             item { Header() }
             // Affiche du club favori : le cœur de l'accueil.
             item { FavoriteHero(state, onTeam, onMatch, onPickFavorite) }
+            // Prochain match au stade (masqué s'il est déjà dans la carte « Mon club »).
+            state.nextHome?.let { match ->
+                item(key = "next-home") { NextHomeCard(match, state.favorite?.logo, onMatch) }
+            }
             // Clubs suivis : une carte par club, prochain match ou score en direct.
             if (state.followed.isNotEmpty()) {
                 item { SectionTitle(stringResource(R.string.followed_clubs)) }
@@ -288,6 +295,62 @@ private fun FavoriteHero(
     }
 }
 
+/**
+ * Prochain match à domicile du club favori :
+ * ```
+ * 🏟 PROCHAIN MATCH À DOMICILE
+ * [logo] [logo]  Bayern – Leverkusen        20:30
+ *                Bundesliga · 22 nov.     J-16
+ * Allianz Arena
+ * ```
+ */
+@Composable
+private fun NextHomeCard(match: ClubMatch, clubLogo: String?, onMatch: (String, String) -> Unit) {
+    val accent = LocalSportColors.current.accent
+    AppCard(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 12.dp)) {
+        Column(Modifier.fillMaxWidth().clickable { onMatch(match.competitionCode, match.id) }.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Stadium, contentDescription = null, tint = accent, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    stringResource(R.string.next_home_match).uppercase(),
+                    style = MaterialTheme.typography.labelMedium, letterSpacing = 1.5.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.height(14.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Le club qui reçoit d'abord : le favori, puis l'adversaire.
+                TeamLogo(clubLogo, size = 36.dp)
+                Spacer(Modifier.width(6.dp))
+                TeamLogo(match.opponent.logo, size = 36.dp)
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        stringResource(R.string.versus_short, match.opponent.shortName),
+                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        "${match.competition} · ${formatShortDate(match.kickoff)}",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(formatTime(match.kickoff), style = MaterialTheme.typography.titleLarge, color = accent, fontWeight = FontWeight.Bold)
+                    Countdown(match.kickoff)
+                }
+            }
+            match.venue?.let { venue ->
+                Spacer(Modifier.height(10.dp))
+                Text(venue, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+
 @Composable
 private fun HeroSide(logo: String?, name: String, modifier: Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
@@ -332,25 +395,32 @@ private fun FollowedCard(
             when {
                 form == null -> Text("…", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 match == null -> Text(stringResource(R.string.widget_no_match), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                else -> Row(verticalAlignment = Alignment.CenterVertically) {
-                    TeamLogo(match.opponent.logo, size = 20.dp)
-                    Spacer(Modifier.width(8.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            (if (match.home) "vs " else "@ ") + match.opponent.shortName,
-                            style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            if (form.live != null) statusLabel(match.statusName, match.state, match.kickoff, match.clock) else formatShortDate(match.kickoff),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (form.live != null) LocalSportColors.current.live else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                else -> {
+                    val live = form.live != null
+                    val liveColor = LocalSportColors.current.live
+                    // Le club qui reçoit en haut, l'autre en dessous ; score de chacun en face en direct.
+                    val us = Triple(club.logo, club.name, match.goalsFor)
+                    val them = Triple(match.opponent.logo, match.opponent.shortName, match.goalsAgainst)
+                    val (top, bottom) = if (match.home) us to them else them to us
+                    listOf(top, bottom).forEachIndexed { i, (logo, name, goals) ->
+                        if (i > 0) Spacer(Modifier.height(6.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            TeamLogo(logo, size = 20.dp)
+                            Spacer(Modifier.width(8.dp))
+                            Text(name, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            if (live) Text("${goals ?: 0}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = liveColor)
+                        }
                     }
-                    Text(
-                        if (form.live != null) "${match.goalsFor ?: 0}-${match.goalsAgainst ?: 0}" else formatTime(match.kickoff),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = if (form.live != null) LocalSportColors.current.live else LocalSportColors.current.accent,
-                    )
+                    Spacer(Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            if (live) statusLabel(match.statusName, match.state, match.kickoff, match.clock) else formatShortDate(match.kickoff),
+                            Modifier.weight(1f),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (live) liveColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        if (!live) Text(formatTime(match.kickoff), style = MaterialTheme.typography.titleMedium, color = LocalSportColors.current.accent, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
