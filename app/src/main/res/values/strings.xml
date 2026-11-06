@@ -261,4 +261,8 @@
     <string name="background_just_now">à l\'instant</string>
     <string name="favorite_league">Ligue favorite</string>
     <string name="favorite_league_hint">Ouverte par défaut dans l\'onglet Ligues. Touchez-la à nouveau pour la retirer.</string>
+    <string name="my_league">Ma ligue · %1$s</string>
+    <string name="points_short">%1$d pts</string>
+    <string name="league_live_now">En direct</string>
+    <string name="league_next_day">Prochaine journée · %1$s</string>
 </resources>
