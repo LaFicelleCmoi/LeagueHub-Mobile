@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!--
+      Version au trait de l'écusson pour les icônes thématiques (Android 13+) :
+      seule l'opacité compte, le système applique ses propres couleurs.
+    -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineJoin="round"
+        android:pathData="M31,31C40,28.5 47,27 54,25.5C61,27 68,28.5 77,31V55C77,68 67,77.5 54,83C41,77.5 31,68 31,55Z" />
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineJoin="round"
+        android:pathData="M40,36H68V68H40ZM40,52H68M47.5,36V41.5H60.5V36M47.5,68V62.5H60.5V68" />
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3"
+        android:pathData="M54,46a6,6 0,1 1,0 12a6,6 0,1 1,0 -12Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,50.2a1.8,1.8 0,1 1,0 3.6a1.8,1.8 0,1 1,0 -3.6Z" />
+</vector>
