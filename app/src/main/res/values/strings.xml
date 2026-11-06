@@ -259,4 +259,6 @@
     <string name="app_version">Version %1$s</string>
     <string name="favorite_hint">Accueil, widget et notifications suivent ce club.</string>
     <string name="background_just_now">à l\'instant</string>
+    <string name="favorite_league">Ligue favorite</string>
+    <string name="favorite_league_hint">Ouverte par défaut dans l\'onglet Ligues. Touchez-la à nouveau pour la retirer.</string>
 </resources>
