@@ -242,4 +242,6 @@
     <string name="app_version">Version %1$s</string>
     <string name="favorite_hint">Home, widget and notifications follow this club.</string>
     <string name="background_just_now">just now</string>
+    <string name="favorite_league">Favourite league</string>
+    <string name="favorite_league_hint">Opens by default in the Leagues tab. Tap it again to remove it.</string>
 </resources>
