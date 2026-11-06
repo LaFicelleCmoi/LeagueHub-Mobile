@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Relance du suivi des matchs après un redémarrage du téléphone. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".app.LeagueHubApp"
@@ -56,6 +58,16 @@
         <receiver
             android:name=".widget.WidgetTickReceiver"
             android:exported="false" />
+
+        <!-- Redémarrage ou mise à jour : relance la synchro et le battement (alarmes perdues). -->
+        <receiver
+            android:name=".app.work.RestartReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <!-- Langue choisie dans l'app, mémorisée par AppCompat sur Android < 13. -->
         <service
