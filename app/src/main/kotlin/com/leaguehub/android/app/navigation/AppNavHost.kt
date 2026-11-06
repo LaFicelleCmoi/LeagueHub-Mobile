@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -91,8 +92,18 @@ private data class TopLevel(val route: String, val pattern: String, val label: I
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppNavHost(navController: NavHostController = rememberNavController()) {
-    var lastLeague by rememberSaveable { mutableStateOf(Competitions.LEAGUES.first().slug) }
+fun AppNavHost(favoriteLeague: String? = null, navController: NavHostController = rememberNavController()) {
+    var lastLeague by rememberSaveable { mutableStateOf(favoriteLeague ?: Competitions.LEAGUES.first().slug) }
+    // Nouvelle ligue favorite choisie dans les Réglages : l'onglet Ligues s'ouvrira dessus.
+    // Mémorisée pour ne pas écraser la dernière ligue consultée lors d'une rotation.
+    var appliedFavorite by rememberSaveable { mutableStateOf(favoriteLeague) }
+    LaunchedEffect(favoriteLeague) {
+        if (favoriteLeague == appliedFavorite) return@LaunchedEffect
+        appliedFavorite = favoriteLeague
+        favoriteLeague?.let { lastLeague = it }
+        // Sinon restoreState ramènerait l'ancienne ligue mémorisée au prochain appui sur l'onglet.
+        navController.clearBackStack(Routes.LEAGUE)
+    }
     val topLevel = listOf(
         TopLevel(Routes.HOME, Routes.HOME, R.string.nav_home, Icons.Default.Home),
         TopLevel(Routes.league(lastLeague), Routes.LEAGUE, R.string.nav_leagues, Icons.Default.SportsSoccer),
@@ -206,7 +217,13 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
 
 @Composable
 private fun LeagueChips(selected: String, onSelect: (LeagueConfig) -> Unit) {
-    LazyRow(Modifier.padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    // La ligue affichée (souvent la favorite) reste visible même si elle est loin dans la liste.
+    val listState = rememberLazyListState()
+    LaunchedEffect(selected) {
+        val index = Competitions.LEAGUES.indexOfFirst { it.slug == selected }
+        if (index >= 0) listState.animateScrollToItem(index) // l'élément 0 est la marge : garde un voisin visible
+    }
+    LazyRow(Modifier.padding(vertical = 6.dp), state = listState, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         item { Spacer(Modifier.width(6.dp)) }
         items(Competitions.LEAGUES, key = { it.slug }) { league ->
             LeagueChip(league, selected = league.slug == selected, onClick = { onSelect(league) })
