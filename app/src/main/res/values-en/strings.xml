@@ -248,4 +248,6 @@
     <string name="points_short">%1$d pts</string>
     <string name="league_live_now">Live now</string>
     <string name="league_next_day">Next matchday · %1$s</string>
+    <string name="widget_refresh_failed">Failed</string>
+    <string name="widget_refresh">Refresh</string>
 </resources>
