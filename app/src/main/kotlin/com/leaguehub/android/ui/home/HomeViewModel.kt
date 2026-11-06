@@ -9,6 +9,7 @@ import com.leaguehub.android.domain.live.PollResult
 import com.leaguehub.android.domain.live.needsLiveUpdate
 import com.leaguehub.android.domain.live.nextPollDelay
 import com.leaguehub.android.domain.live.pollingFlow
+import com.leaguehub.android.domain.model.ClubMatch
 import com.leaguehub.android.domain.model.FavoriteClub
 import com.leaguehub.android.domain.model.Match
 import com.leaguehub.android.domain.model.MatchState
@@ -43,7 +44,19 @@ data class HomeUiState(
     val favoriteForm: TeamForm? = null,
     /** Clubs suivis (hors favori) et leur fiche ; null tant qu'elle n'est pas chargée. */
     val followed: List<Pair<FavoriteClub, TeamForm?>> = emptyList(),
+    /** Prochain match du favori au stade, s'il n'est pas déjà celui de la carte « Mon club ». */
+    val nextHome: ClubMatch? = null,
 )
+
+/**
+ * Prochain match à domicile d'un club, ou null s'il est déjà affiché dans la carte « Mon club »
+ * (le match en cours, sinon le prochain) : pas de doublon à l'écran.
+ */
+internal fun nextHomeMatch(form: TeamForm?): ClubMatch? {
+    val home = form?.seasonMatches?.filter { it.home && it.state == MatchState.PRE }?.minByOrNull { it.kickoff } ?: return null
+    val shown = form.live ?: form.next
+    return home.takeIf { it.id != shown?.id }
+}
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -125,6 +138,7 @@ class HomeViewModel @Inject constructor(
             favorite = fav,
             favoriteForm = form?.takeIf { fav != null && it.team.id == fav.teamId },
             followed = followed,
+            nextHome = nextHomeMatch(form?.takeIf { fav != null && it.team.id == fav.teamId }),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
