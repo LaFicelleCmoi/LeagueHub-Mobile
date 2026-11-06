@@ -238,4 +238,25 @@
     <string name="widget_live_count">%1$d en direct</string>
     <string name="loading_short">Chargement…</string>
     <string name="widget_description">Prochain match de votre club favori</string>
+    <string name="next_home_match">Prochain match à domicile</string>
+    <string name="versus_short">vs %1$s</string>
+    <string name="channel_background">Suivi en arrière-plan</string>
+    <string name="notif_background">Vérification des matchs…</string>
+    <string name="background_tracking">Suivi en arrière-plan</string>
+    <string name="background_last_check">Dernière vérification %1$s</string>
+    <string name="background_never">Aucune vérification pour l\'instant</string>
+    <string name="background_failure">Échec réseau %1$s</string>
+    <string name="background_hint">Vérifie les scores chaque minute pendant les matchs, même téléphone en veille.</string>
+    <string name="notifications_blocked">Notifications bloquées par Android</string>
+    <string name="notifications_blocked_hint">Autorisez-les pour recevoir buts et coups d\'envoi.</string>
+    <string name="open_settings">Autoriser</string>
+    <string name="notify_kickoff_hint">30 minutes avant le match</string>
+    <string name="notify_goals_hint">À chaque but, dans la minute</string>
+    <string name="club_theme_hint">Couleurs de l\'app aux couleurs du club</string>
+    <string name="club_theme_unavailable">Couleur du club inconnue</string>
+    <string name="change_club">Changer</string>
+    <string name="settings_about">À propos</string>
+    <string name="app_version">Version %1$s</string>
+    <string name="favorite_hint">Accueil, widget et notifications suivent ce club.</string>
+    <string name="background_just_now">à l\'instant</string>
 </resources>
