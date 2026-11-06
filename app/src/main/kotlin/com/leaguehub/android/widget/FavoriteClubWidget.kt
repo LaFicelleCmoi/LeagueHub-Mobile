@@ -194,6 +194,18 @@ object WidgetState {
     ) {
         /** Un score est à afficher (en direct ou final). */
         val scored: Boolean get() = live || finished
+
+        // Ordre d'affichage : le club qui reçoit à gauche (ou en haut), comme dans l'app.
+        val homeLogo: Bitmap? get() = if (home) clubLogo else opponentLogo
+        val awayLogo: Bitmap? get() = if (home) opponentLogo else clubLogo
+        val homeShort: String get() = if (home) club.orEmpty() else opponentShort
+        val awayShort: String get() = if (home) opponentShort else club.orEmpty()
+        val homeScorers: List<String> get() = if (home) scorersFor else scorersAgainst
+        val awayScorers: List<String> get() = if (home) scorersAgainst else scorersFor
+
+        /** Score domicile – extérieur, avec le séparateur voulu. */
+        fun score(separator: String = "-"): String =
+            if (home) "$goalsFor$separator$goalsAgainst" else "$goalsAgainst$separator$goalsFor"
     }
 
     fun read(context: Context): Snapshot {
@@ -424,12 +436,19 @@ class FavoriteClubWidget : GlanceAppWidget() {
             // Les équipes occupent tout l'espace restant, centrées verticalement : pas de trou.
             Column(GlanceModifier.fillMaxWidth().defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
                 val formSize = if (m.fullForm) 5 else 3
-                TeamRow(context, m, s.clubLogo, s.club.orEmpty(), s.clubForm.takeLast(formSize), s.goalsFor.takeIf { s.live })
+                val clubRow = @Composable {
+                    TeamRow(context, m, s.clubLogo, s.club.orEmpty(), s.clubForm.takeLast(formSize), s.goalsFor.takeIf { s.live })
+                }
+                val opponentRow = @Composable {
+                    TeamRow(
+                        context, m, s.opponentLogo, s.opponent, // l'ordre (domicile en haut) suffit : pas de « @ »
+                        s.opponentForm.takeLast(formSize), s.goalsAgainst.takeIf { s.live },
+                    )
+                }
+                // Le club qui reçoit en haut.
+                if (s.home) clubRow() else opponentRow()
                 Spacer(GlanceModifier.height(m.dp(8f)))
-                TeamRow(
-                    context, m, s.opponentLogo, (if (s.home) "" else "@ ") + s.opponent,
-                    s.opponentForm.takeLast(formSize), s.goalsAgainst.takeIf { s.live },
-                )
+                if (s.home) opponentRow() else clubRow()
             }
             if (m.footer) {
                 Divider(top = 0.dp, bottom = 8.dp)
@@ -474,26 +493,26 @@ class FavoriteClubWidget : GlanceAppWidget() {
                 }
             }
             Spacer(GlanceModifier.defaultWeight())
-            // Le favori à gauche, l'adversaire à droite ; score en très grand au centre.
+            // Le club qui reçoit à gauche ; score en très grand au centre.
             Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                ScoreSide(s.clubLogo, s.club.orEmpty(), logo, m)
+                ScoreSide(s.homeLogo, s.homeShort, logo, m)
                 Text(
-                    "${s.goalsFor} - ${s.goalsAgainst}",
+                    s.score(" - "),
                     style = TextStyle(
                         color = if (s.live) Live else GlanceTheme.colors.onSurface,
                         fontSize = m.sp(34f), fontWeight = FontWeight.Bold,
                     ),
                     maxLines = 1,
                 )
-                ScoreSide(s.opponentLogo, s.opponentShort, logo, m)
+                ScoreSide(s.awayLogo, s.awayShort, logo, m)
             }
             Spacer(GlanceModifier.defaultWeight())
             // Buteurs des deux équipes, autant de lignes que la hauteur le permet.
             if (scorerLines > 0 && (s.scorersFor.isNotEmpty() || s.scorersAgainst.isNotEmpty())) {
                 Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                    Scorers(s.scorersFor, scorerLines, TextAlign.Start, m)
+                    Scorers(s.homeScorers, scorerLines, TextAlign.Start, m)
                     Spacer(GlanceModifier.width(8.dp))
-                    Scorers(s.scorersAgainst, scorerLines, TextAlign.End, m)
+                    Scorers(s.awayScorers, scorerLines, TextAlign.End, m)
                 }
             }
         }
@@ -576,14 +595,14 @@ class FavoriteClubWidget : GlanceAppWidget() {
         Column(GlanceModifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.CenterVertically) {
             if (m.tinyShowLogos) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    s.clubLogo?.let { Logo(it, m.tinyLogo) }
+                    s.homeLogo?.let { Logo(it, m.tinyLogo) }
                     Spacer(GlanceModifier.width(4.dp))
-                    s.opponentLogo?.let { Logo(it, m.tinyLogo) }
+                    s.awayLogo?.let { Logo(it, m.tinyLogo) }
                 }
                 Spacer(GlanceModifier.height(4.dp))
             }
             Text(
-                if (s.scored) "${s.goalsFor}-${s.goalsAgainst}" else s.time,
+                if (s.scored) s.score() else s.time,
                 style = TextStyle(color = statusColor(s), fontSize = 14.sp, fontWeight = FontWeight.Bold),
                 maxLines = 1,
             )
@@ -594,18 +613,18 @@ class FavoriteClubWidget : GlanceAppWidget() {
     @Composable
     private fun WideRow(context: Context, s: WidgetState.Snapshot, m: Metrics) {
         Row(GlanceModifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-            s.clubLogo?.let { Logo(it, m.rowLogo); Spacer(GlanceModifier.width(6.dp)) }
-            s.opponentLogo?.let { Logo(it, m.rowLogo); Spacer(GlanceModifier.width(10.dp)) }
+            s.homeLogo?.let { Logo(it, m.rowLogo); Spacer(GlanceModifier.width(6.dp)) }
+            s.awayLogo?.let { Logo(it, m.rowLogo); Spacer(GlanceModifier.width(10.dp)) }
             Column(GlanceModifier.defaultWeight()) {
                 Text(
-                    s.club.orEmpty() + (if (s.home) " vs " else " @ ") + s.opponentShort,
+                    s.homeShort + " – " + s.awayShort,
                     style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Bold),
                     maxLines = 1,
                 )
                 if (m.rowTwoLines) Row(verticalAlignment = Alignment.CenterVertically) {
                     s.competitionLogo?.let { Logo(it, 12.dp); Spacer(GlanceModifier.width(4.dp)) }
                     Text(
-                        if (s.scored) "${s.goalsFor} – ${s.goalsAgainst}" else s.competition,
+                        if (s.scored) s.score(" – ") else s.competition,
                         style = TextStyle(color = if (s.live) Live else Secondary, fontSize = 11.sp, fontWeight = if (s.scored) FontWeight.Bold else FontWeight.Normal),
                         maxLines = 1,
                     )
@@ -638,15 +657,15 @@ class FavoriteClubWidget : GlanceAppWidget() {
             }
             Spacer(GlanceModifier.defaultWeight())
             Row(verticalAlignment = Alignment.CenterVertically) {
-                s.clubLogo?.let { Logo(it, m.squareLogo) }
+                s.homeLogo?.let { Logo(it, m.squareLogo) }
                 Text(
-                    if (s.scored) "  ${s.goalsFor}-${s.goalsAgainst}  " else "  vs  ",
+                    if (s.scored) "  ${s.score()}  " else "  vs  ",
                     style = TextStyle(
                         color = if (s.live) Live else if (s.scored) GlanceTheme.colors.onSurface else GlanceTheme.colors.onSurfaceVariant,
                         fontSize = if (s.scored) 18.sp else 12.sp, fontWeight = FontWeight.Bold,
                     ),
                 )
-                s.opponentLogo?.let { Logo(it, m.squareLogo) }
+                s.awayLogo?.let { Logo(it, m.squareLogo) }
             }
             Spacer(GlanceModifier.defaultWeight())
             Text(
@@ -662,8 +681,8 @@ class FavoriteClubWidget : GlanceAppWidget() {
     @Composable
     private fun Compact(context: Context, s: WidgetState.Snapshot, m: Metrics) {
         Row(GlanceModifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-            s.clubLogo?.let { Logo(it, minOf(m.rowLogo, 24.dp)); Spacer(GlanceModifier.width(4.dp)) }
-            s.opponentLogo?.let { Logo(it, minOf(m.rowLogo, 24.dp)); Spacer(GlanceModifier.width(8.dp)) }
+            s.homeLogo?.let { Logo(it, minOf(m.rowLogo, 24.dp)); Spacer(GlanceModifier.width(4.dp)) }
+            s.awayLogo?.let { Logo(it, minOf(m.rowLogo, 24.dp)); Spacer(GlanceModifier.width(8.dp)) }
             Column(GlanceModifier.defaultWeight()) {
                 Text(
                     (if (s.home) "vs " else "@ ") + s.opponentShort,
@@ -677,7 +696,7 @@ class FavoriteClubWidget : GlanceAppWidget() {
                 )
             }
             Text(
-                if (s.scored) "${s.goalsFor}-${s.goalsAgainst}" else s.time,
+                if (s.scored) s.score() else s.time,
                 style = TextStyle(color = statusColor(s), fontSize = 16.sp, fontWeight = FontWeight.Bold),
             )
         }
