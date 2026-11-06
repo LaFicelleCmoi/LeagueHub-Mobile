@@ -20,13 +20,16 @@ import com.leaguehub.android.domain.standings.LiveStandings
 import com.leaguehub.android.domain.standings.computeLiveStandings
 import com.leaguehub.android.domain.standings.preMatchKey
 import com.leaguehub.android.ui.common.GoalWatcher
+import com.leaguehub.android.core.coroutines.ComputationDispatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
@@ -57,6 +60,7 @@ class LeagueViewModel @Inject constructor(
     savedState: SavedStateHandle,
     private val repo: FootballRepository,
     settings: SettingsRepository,
+    @ComputationDispatcher computation: CoroutineDispatcher,
 ) : ViewModel() {
 
     val league: LeagueConfig = Competitions.bySlug(savedState.get<String>("slug").orEmpty()) ?: Competitions.LIGUE_1
@@ -105,7 +109,8 @@ class LeagueViewModel @Inject constructor(
             offline = o,
             loaded = l,
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LeagueUiState(league))
+    }.flowOn(computation) // fusion du calendrier et classement en direct : hors du thread de l'interface
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LeagueUiState(league))
 
     private val _leaders = MutableStateFlow<Remote<Leaders>>(Remote.Loading)
     val leaders = _leaders.asStateFlow()
