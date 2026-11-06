@@ -78,6 +78,7 @@ class SyncWorker @AssistedInject constructor(
         val soon = (listOfNotNull(club?.nextKickoff, TodayWidgetState.nextKickoff(applicationContext)) + followedKickoffs)
             .any { it - now in 0..WIDGET_WAKE_MS }
         if (anyLive || soon) LiveWidgetWorker.ensureRunning(applicationContext)
+        BackgroundHealth.record(applicationContext, failed = favorite != null && club == null, now = now)
         // Toujours « succès » : un échec réseau ponctuel ne doit pas repousser la synchro suivante (backoff).
         return Result.success()
     }
