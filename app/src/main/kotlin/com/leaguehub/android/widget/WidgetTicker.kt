@@ -34,16 +34,26 @@ object WidgetTicker {
     private const val RETRY_MS = 2 * 60_000L
     private const val WAKE_WINDOW_MS = 12 * 60 * 60_000L
     private const val STARTING_GRACE_MS = 15 * 60_000L
+    /** Retard maximal qu'Android s'accorde sur une alarme inexacte, en part du délai demandé. */
+    private const val ALARM_FUZZ = 0.75
+    private const val MIN_DELAY_MS = 5_000L
 
     private fun pendingIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
         context, 0, Intent(context, WidgetTickReceiver::class.java),
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
-    private fun schedule(context: Context, delayMs: Long) {
+    /**
+     * Programme le battement pour qu'il arrive au plus tard à [deadline].
+     * Sans permission d'alarme exacte, Android peut retarder l'alarme de 75 % du délai demandé (et Samsung tire
+     * en fin de fenêtre) : on vise donc assez tôt pour que la fin de la fenêtre tombe sur l'échéance.
+     */
+    private fun schedule(context: Context, deadline: Long) {
         val alarms = context.getSystemService(AlarmManager::class.java) ?: return
-        // Sans permission d'alarme exacte ; se déclenche aussi en veille légère.
-        alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + delayMs, pendingIntent(context))
+        val now = System.currentTimeMillis()
+        val delay = ((deadline - now) / (1 + ALARM_FUZZ)).toLong().coerceAtLeast(MIN_DELAY_MS)
+        // Se déclenche aussi en veille (Doze), l'app étant exemptée d'optimisation de batterie.
+        alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, now + delay, pendingIntent(context))
     }
 
     private fun cancel(context: Context) {
@@ -57,10 +67,10 @@ object WidgetTicker {
      */
     suspend fun tick(context: Context) {
         // Filet de sécurité d'abord : si on est interrompu (réseau lent, délai dépassé), la chaîne continue.
-        schedule(context, LIVE_EVERY_MS)
+        val now = System.currentTimeMillis()
+        schedule(context, now + LIVE_EVERY_MS)
         val entry = widgetEntryPoint(context)
         val football = entry.football()
-        val now = System.currentTimeMillis()
         val settings = entry.settings().settings.first()
         val favorite = settings.favorite
         // Clubs suivis avec au moins une notification activée.
@@ -115,13 +125,14 @@ object WidgetTicker {
         val starting = kickoffs.any { it <= now && now - it < STARTING_GRACE_MS }
         val nextWake = kickoffs.filter { it > now }.minOrNull()
 
-        val delay = when {
-            live || starting -> LIVE_EVERY_MS
-            failed -> RETRY_MS
-            nextWake != null && nextWake - now < WAKE_WINDOW_MS -> (nextWake - now).coerceAtLeast(LIVE_EVERY_MS)
+        // Échéances comptées depuis le début du battement : sa durée (réseau, dessin) ne s'ajoute pas au rythme.
+        val deadline = when {
+            live || starting -> now + LIVE_EVERY_MS
+            failed -> now + RETRY_MS
+            nextWake != null && nextWake - now < WAKE_WINDOW_MS -> nextWake.coerceAtLeast(now + LIVE_EVERY_MS)
             else -> null
         }
-        if (delay != null) schedule(context, delay) else cancel(context)
+        if (deadline != null) schedule(context, deadline) else cancel(context)
     }
 }
 
