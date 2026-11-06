@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
                 mode = settings.theme,
                 clubColor = settings.favorite?.color?.takeIf { settings.clubTheme },
             ) {
-                AppNavHost()
+                AppNavHost(favoriteLeague = settings.favoriteLeague)
             }
         }
     }
