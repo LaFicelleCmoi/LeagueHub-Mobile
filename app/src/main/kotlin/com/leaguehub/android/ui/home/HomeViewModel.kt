@@ -13,6 +13,8 @@ import com.leaguehub.android.domain.model.ClubMatch
 import com.leaguehub.android.domain.model.FavoriteClub
 import com.leaguehub.android.domain.model.Match
 import com.leaguehub.android.domain.model.MatchState
+import com.leaguehub.android.domain.model.StandingRow
+import com.leaguehub.android.domain.model.Standings
 import com.leaguehub.android.domain.model.TeamForm
 import com.leaguehub.android.domain.repository.FootballRepository
 import com.leaguehub.android.domain.repository.SettingsRepository
@@ -46,7 +48,45 @@ data class HomeUiState(
     val followed: List<Pair<FavoriteClub, TeamForm?>> = emptyList(),
     /** Prochain match du favori au stade, s'il n'est pas déjà celui de la carte « Mon club ». */
     val nextHome: ClubMatch? = null,
+    /** Résumé de la ligue favorite choisie dans les Réglages. */
+    val league: LeagueSummary? = null,
 )
+
+/** Carte « Ma ligue » : tête du classement et matchs à suivre. */
+data class LeagueSummary(
+    val league: LeagueConfig,
+    /** Les 3 premiers, puis le club favori s'il est plus bas. */
+    val rows: List<StandingRow>,
+    val favoriteTeamId: String?,
+    /** Matchs en cours, sinon ceux du prochain jour de match (3 au plus). */
+    val matches: List<Match>,
+    val live: Boolean,
+)
+
+internal const val LEAGUE_TOP = 3
+private const val LEAGUE_MATCHES = 3
+
+internal fun leagueSummary(
+    league: LeagueConfig,
+    standings: Standings?,
+    calendar: List<Match>,
+    favoriteTeamId: String?,
+): LeagueSummary? {
+    val all = standings?.rows.orEmpty()
+    val top = all.take(LEAGUE_TOP)
+    val mine = all.drop(LEAGUE_TOP).firstOrNull { it.team.id == favoriteTeamId }
+    val live = calendar.filter { it.state == MatchState.IN }
+    val matches = live.ifEmpty {
+        val upcoming = calendar.filter { it.state == MatchState.PRE }.sortedBy { it.kickoff }
+        val day = upcoming.firstOrNull()?.let { parisDay(it.kickoff) }
+        upcoming.filter { parisDay(it.kickoff) == day }
+    }
+        // Le match du favori d'abord, puis l'ordre du coup d'envoi.
+        .sortedWith(compareByDescending<Match> { favoriteTeamId != null && it.involves(favoriteTeamId) }.thenBy { it.kickoff })
+        .take(LEAGUE_MATCHES)
+    if (top.isEmpty() && matches.isEmpty()) return null
+    return LeagueSummary(league, top + listOfNotNull(mine), favoriteTeamId, matches, live = live.isNotEmpty())
+}
 
 /**
  * Prochain match à domicile d'un club, ou null s'il est déjà affiché dans la carte « Mon club »
@@ -123,7 +163,22 @@ class HomeViewModel @Inject constructor(
             ).map { (it as? PollResult.Success)?.value ?: clubs.map { c -> c to null } }
         }
 
-    val state: StateFlow<HomeUiState> = combine(calendars, favorite, favoriteForm, live, followedForms) { cals, fav, form, _, followed ->
+    /** Ligue favorite : classement en base (rafraîchi à chaque choix) et calendrier déjà chargé. */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val leagueCard = settings.settings
+        .map { s -> s.favoriteLeague?.let(Competitions::bySlug) to s.favorite?.teamId }
+        .distinctUntilChanged()
+        .flatMapLatest { (league, teamId) ->
+            if (league == null) flowOf(null)
+            else {
+                viewModelScope.launch { runCatching { repo.refreshStandings(league) } }
+                combine(repo.standings(league), calendars) { standings, cals ->
+                    leagueSummary(league, standings?.data, cals.firstOrNull { it.first == league }?.second.orEmpty(), teamId)
+                }
+            }
+        }
+
+    private val base = combine(calendars, favorite, favoriteForm, live, followedForms) { cals, fav, form, _, followed ->
         val today = LocalDate.now(com.leaguehub.android.domain.schedule.PARIS)
         val todays = cals.map { (league, matches) -> league to matches.filter { parisDay(it.kickoff) == today } }
             .filter { it.second.isNotEmpty() }
@@ -140,7 +195,10 @@ class HomeViewModel @Inject constructor(
             followed = followed,
             nextHome = nextHomeMatch(form?.takeIf { fav != null && it.team.id == fav.teamId }),
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
+    }
+
+    val state: StateFlow<HomeUiState> = combine(base, leagueCard) { s, league -> s.copy(league = league) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     init {
         // Calendriers vides au premier lancement : on les remplit (le SyncWorker prend ensuite le relais).
