@@ -98,6 +98,10 @@ fun HomeScreen(
                     }
                 }
             }
+            // Ligue favorite choisie dans les Réglages.
+            state.league?.let { summary ->
+                item(key = "my-league") { MyLeagueCard(summary, onLeague, onTeam, onMatch) }
+            }
             item { Figures(state.figures) }
             // Accès rapide aux compétitions.
             item {
@@ -197,6 +201,94 @@ private fun LeagueMatchesCard(
         matches.forEach { m ->
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             CompactMatchRow(m, favoriteId = favoriteId, onClick = { onMatch(m.competition, m.id) })
+        }
+    }
+}
+
+/**
+ * Carte « Ma ligue » :
+ * ```
+ * ▌[logo] MA LIGUE · BUNDESLIGA            >
+ *  1 [logo] Bayern Munich ★            18 pts
+ *  2 [logo] Dortmund                   18 pts
+ *  3 [logo] Freiburg                   16 pts
+ *  PROCHAINE JOURNÉE · 7 NOV.
+ *  [match] [match] [match]
+ * ```
+ */
+@Composable
+private fun MyLeagueCard(
+    summary: LeagueSummary,
+    onLeague: (LeagueConfig) -> Unit,
+    onTeam: (league: String, teamId: String) -> Unit,
+    onMatch: (String, String) -> Unit,
+) {
+    val league = summary.league
+    val accent = LocalSportColors.current.accent
+    AppCard(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 12.dp)) {
+        Row(
+            Modifier.fillMaxWidth().height(IntrinsicSize.Min).clickable { onLeague(league) },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.width(4.dp).fillMaxHeight().background(Color(league.accent)))
+            Row(Modifier.weight(1f).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                TeamLogo(league.logo(), size = 20.dp)
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    stringResource(R.string.my_league, league.name).uppercase(),
+                    style = MaterialTheme.typography.labelLarge, letterSpacing = 0.8.sp, modifier = Modifier.weight(1f),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        summary.rows.forEachIndexed { i, row ->
+            // Le favori classé plus bas : séparation visible avec la tête du classement.
+            if (i == LEAGUE_TOP) Text(
+                "…", Modifier.padding(start = 20.dp), color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+            )
+            val mine = row.team.id == summary.favoriteTeamId
+            Row(
+                Modifier.fillMaxWidth()
+                    .background(if (mine) accent.copy(alpha = 0.10f) else Color.Transparent)
+                    .clickable { onTeam(league.slug, row.team.id) }
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    row.rank.toString(), Modifier.width(28.dp),
+                    style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TeamLogo(row.team.logo, size = 22.dp)
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    row.team.shortName, Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = if (mine) FontWeight.Bold else FontWeight.Normal,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    stringResource(R.string.points_short, row.points),
+                    style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold,
+                    color = if (mine) accent else MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+        if (summary.matches.isNotEmpty()) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Row(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (summary.live) { LiveDot(); Spacer(Modifier.width(6.dp)) }
+                Text(
+                    if (summary.live) stringResource(R.string.league_live_now).uppercase()
+                    else stringResource(R.string.league_next_day, formatShortDate(summary.matches.first().kickoff)).uppercase(),
+                    style = MaterialTheme.typography.labelMedium, letterSpacing = 1.2.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            summary.matches.forEach { m ->
+                CompactMatchRow(m, favoriteId = summary.favoriteTeamId, onClick = { onMatch(m.competition, m.id) })
+            }
         }
     }
 }
