@@ -47,6 +47,7 @@ class SettingsViewModel @Inject constructor(
     fun clearFavorite() = viewModelScope.launch { repo.setFavorite(null) }
     fun clubTheme(enabled: Boolean) = viewModelScope.launch { repo.setClubTheme(enabled) }
     fun notifications(kickoff: Boolean, goals: Boolean) = viewModelScope.launch { repo.setNotifications(kickoff, goals) }
+    fun favoriteLeague(slug: String?) = viewModelScope.launch { repo.setFavoriteLeague(slug) }
     fun unfollow(teamId: String) = viewModelScope.launch { repo.unfollow(teamId) }
     fun followedNotifications(teamId: String, kickoff: Boolean, goals: Boolean) =
         viewModelScope.launch { repo.setFollowedNotifications(teamId, kickoff, goals) }
