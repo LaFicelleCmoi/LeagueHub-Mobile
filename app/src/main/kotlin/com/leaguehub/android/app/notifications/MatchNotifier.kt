@@ -15,6 +15,9 @@ object MatchNotifier {
     private const val STATE = "sync-state"
     private val lock = Any()
 
+    /** Buts déjà annoncés pour ce club dans ce match (clé par club : deux clubs suivis peuvent s'affronter). */
+    private fun goalsKey(matchId: String, teamId: String) = "goals:$matchId:$teamId"
+
     /**
      * @param liveFor / liveAgainst score le plus frais connu (résumé du match), sinon celui de la fiche du club.
      */
@@ -31,6 +34,11 @@ object MatchNotifier {
     ) = synchronized(lock) { // synchro et battement peuvent tourner en même temps : pas de doublon
         val prefs = context.getSharedPreferences(STATE, Context.MODE_PRIVATE)
         val next = form.next
+        // Score de départ noté avant le coup d'envoi : tout but marqué ensuite sera annoncé.
+        if (next != null) {
+            val key = goalsKey(next.id, club.teamId)
+            if (!prefs.contains(key)) prefs.edit().putInt(key, 0).commit()
+        }
         if (kickoff && next != null && next.kickoff - now in 0..KICKOFF_WARNING_MS) {
             val key = "kickoff:${next.id}"
             if (!prefs.getBoolean(key, false)) {
@@ -45,19 +53,23 @@ object MatchNotifier {
 
         val live = form.live
         if (goals && live != null && live.state == MatchState.IN) {
-            // Clé par club : deux clubs suivis peuvent s'affronter.
-            val key = "goals:${live.id}:${club.teamId}"
-            val scored = liveFor ?: live.goalsFor ?: 0
+            val key = goalsKey(live.id, club.teamId)
+            // Score inconnu (réponse ESPN incomplète) : on attend le prochain battement.
+            val scored = liveFor ?: live.goalsFor ?: return@synchronized
             val against = liveAgainst ?: live.goalsAgainst ?: 0
-            val known = prefs.getInt(key, 0)
-            if (scored > known) {
-                Notifications.goal(
-                    context, live.id + club.teamId, "$scored-$against",
-                    context.getString(R.string.notif_goal_title, club.name),
-                    "${club.name} $scored – $against ${live.opponent.name} (${clock?.takeIf { it.isNotEmpty() } ?: live.clock})",
-                )
+            when {
+                // Club ajouté en plein match (score d'avant-match jamais noté) : point de départ, sans annoncer les buts déjà marqués.
+                !prefs.contains(key) -> prefs.edit().putInt(key, scored).commit()
+                // Le compteur ne redescend jamais : un cache ESPN en retard (3-1 puis 2-1 puis 3-1) n'annonce pas deux fois le même but.
+                scored > prefs.getInt(key, 0) -> {
+                    prefs.edit().putInt(key, scored).commit()
+                    Notifications.goal(
+                        context, live.id + club.teamId, "$scored-$against",
+                        context.getString(R.string.notif_goal_title, club.name),
+                        "${club.name} $scored – $against ${live.opponent.name} (${clock?.takeIf { it.isNotEmpty() } ?: live.clock})",
+                    )
+                }
             }
-            if (scored != known) prefs.edit().putInt(key, scored).commit()
         }
     }
 }
