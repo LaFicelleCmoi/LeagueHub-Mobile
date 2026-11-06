@@ -8,6 +8,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.awaitAll
@@ -42,6 +43,7 @@ import androidx.glance.LocalSize
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
+import androidx.glance.appwidget.CircularProgressIndicator
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
@@ -113,6 +115,7 @@ object TodayWidgetState {
     private const val LOGO_PX = 64
     private const val MAX_ITEMS = 30
     private const val FETCH_TIMEOUT_MS = 20_000L
+    private const val MIN_FEEDBACK_MS = 700L
     private val json = Json { ignoreUnknownKeys = true }
     private val serializer = ListSerializer(TodayItem.serializer())
     private val mutex = Mutex()
@@ -120,6 +123,28 @@ object TodayWidgetState {
     /** Incrémenté à chaque nouvelle donnée (matchs, puis logos) : le widget affiché se redessine aussitôt. */
     private val _version = MutableStateFlow(0)
     val version: StateFlow<Int> = _version.asStateFlow()
+
+    /** Actualisation demandée par le bouton ↻ en cours : le widget affiche un indicateur. */
+    private val _refreshing = MutableStateFlow(false)
+    val refreshing: StateFlow<Boolean> = _refreshing.asStateFlow()
+
+    /** Dernière actualisation manuelle en échec (réseau) : le widget l'indique au lieu de rester muet. */
+    private val _lastFailed = MutableStateFlow(false)
+    val lastFailed: StateFlow<Boolean> = _lastFailed.asStateFlow()
+
+    /** Actualisation à la demande, avec retour visible : indicateur pendant le chargement, « Échec » sinon. */
+    suspend fun refreshWithFeedback(context: Context, football: FootballRepository, redraw: suspend () -> Unit) {
+        _refreshing.value = true
+        _lastFailed.value = false
+        redraw()
+        val started = System.currentTimeMillis()
+        val result = runCatching { refresh(context, football) }.getOrNull()
+        // L'indicateur reste visible un instant, même si le réseau répond très vite : l'appui est confirmé.
+        delay((MIN_FEEDBACK_MS - (System.currentTimeMillis() - started)).coerceAtLeast(0))
+        _lastFailed.value = result == null
+        _refreshing.value = false
+        redraw()
+    }
 
     private fun dir(context: Context, kind: String) = File(File(context.filesDir, "widget"), kind).apply { mkdirs() }
     fun teamLogo(context: Context, id: String) = File(dir(context, "teams"), "$id.png")
@@ -226,8 +251,7 @@ private val LiveCard = ColorProvider(day = Color(0x14DC2626), night = Color(0x1F
 /** Bouton ↻ : recharge tout de suite, sans passer par la file de la synchro. */
 class RefreshTodayAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
-        TodayWidgetState.refresh(context, football(context))
-        TodayMatchesWidget().update(context, glanceId)
+        TodayWidgetState.refreshWithFeedback(context, football(context)) { TodayMatchesWidget().update(context, glanceId) }
     }
 }
 
@@ -243,6 +267,8 @@ class TodayMatchesWidget : GlanceAppWidget() {
             val items = remember(version) { TodayWidgetState.read(context) }
             val rows = remember(version) { buildRows(context, items.orEmpty()) }
             var failed by remember { mutableStateOf(false) }
+            val refreshing by TodayWidgetState.refreshing.collectAsState()
+            val manualFailed by TodayWidgetState.lastFailed.collectAsState()
             // Le widget se charge lui-même dès qu'il s'affiche si ses données sont absentes ou vieilles.
             LaunchedEffect(Unit) {
                 if (TodayWidgetState.isStale(context)) {
@@ -250,7 +276,10 @@ class TodayMatchesWidget : GlanceAppWidget() {
                 }
             }
             GlanceTheme {
-                Content(context, rows, loaded = items != null, failed = failed && items == null, updatedAt = TodayWidgetState.updatedAt(context))
+                Content(
+                    context, rows, loaded = items != null, failed = failed && items == null,
+                    updatedAt = TodayWidgetState.updatedAt(context), refreshing = refreshing, refreshFailed = manualFailed,
+                )
             }
         }
     }
@@ -304,7 +333,15 @@ class TodayMatchesWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun Content(context: Context, rows: List<Row3>, loaded: Boolean, failed: Boolean, updatedAt: Long) {
+    private fun Content(
+        context: Context,
+        rows: List<Row3>,
+        loaded: Boolean,
+        failed: Boolean,
+        updatedAt: Long,
+        refreshing: Boolean = false,
+        refreshFailed: Boolean = false,
+    ) {
         val size = LocalSize.current
         val fontScale = context.resources.configuration.fontScale
         // Une seule ligne de haut (4×1, 2×1) : uniquement le match le plus important.
@@ -322,7 +359,7 @@ class TodayMatchesWidget : GlanceAppWidget() {
                 GlanceModifier.fillMaxSize().cornerRadius(23.dp).background(GlanceTheme.colors.widgetBackground)
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
-                if (!singleLine) Header(context, rows.count { it.item.state == MatchState.IN }, updatedAt.takeIf { loaded })
+                if (!singleLine) Header(context, rows.count { it.item.state == MatchState.IN }, updatedAt.takeIf { loaded }, refreshing, refreshFailed)
                 when {
                     failed -> Message(context.getString(R.string.widget_today_error))
                     !loaded -> Message(context.getString(R.string.loading_short))
@@ -346,7 +383,7 @@ class TodayMatchesWidget : GlanceAppWidget() {
 
     /** En-tête : titre et date, pastille du direct, heure de mise à jour, bouton ↻. */
     @Composable
-    private fun Header(context: Context, live: Int, updatedAt: Long?) {
+    private fun Header(context: Context, live: Int, updatedAt: Long?, refreshing: Boolean, refreshFailed: Boolean) {
         Row(
             GlanceModifier.fillMaxWidth().padding(start = 4.dp, bottom = 6.dp).clickable(actionStartActivity<MainActivity>()),
             verticalAlignment = Alignment.CenterVertically,
@@ -368,21 +405,32 @@ class TodayMatchesWidget : GlanceAppWidget() {
                 }
                 Spacer(GlanceModifier.width(8.dp))
             }
-            // Heure de la dernière mise à jour : on voit tout de suite si c'est frais.
-            updatedAt?.let {
-                Text(formatTime(it), style = TextStyle(color = Secondary, fontSize = 10.sp))
-                Spacer(GlanceModifier.width(4.dp))
-            }
-            Box(
-                GlanceModifier.size(32.dp).cornerRadius(16.dp).clickable(actionRunCallback<RefreshTodayAction>()),
-                contentAlignment = Alignment.Center,
+            // Heure de mise à jour et bouton ↻ forment une seule grande zone tactile (48 dp de haut) :
+            // un appui un peu à côté du bouton actualise au lieu d'ouvrir l'app.
+            Row(
+                GlanceModifier.height(48.dp).cornerRadius(24.dp).padding(start = 8.dp)
+                    .clickable(actionRunCallback<RefreshTodayAction>()),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Image(
-                    ImageProvider(R.drawable.ic_widget_refresh),
-                    contentDescription = context.getString(R.string.retry),
-                    modifier = GlanceModifier.size(20.dp),
-                    colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
-                )
+                when {
+                    refreshFailed -> Text(
+                        context.getString(R.string.widget_refresh_failed),
+                        style = TextStyle(color = Live, fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                    )
+                    updatedAt != null -> Text(formatTime(updatedAt), style = TextStyle(color = Secondary, fontSize = 10.sp))
+                }
+                Box(GlanceModifier.size(40.dp), contentAlignment = Alignment.Center) {
+                    if (refreshing) {
+                        CircularProgressIndicator(GlanceModifier.size(20.dp), color = GlanceTheme.colors.onSurfaceVariant)
+                    } else {
+                        Image(
+                            ImageProvider(R.drawable.ic_widget_refresh),
+                            contentDescription = context.getString(R.string.widget_refresh),
+                            modifier = GlanceModifier.size(20.dp),
+                            colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
+                        )
+                    }
+                }
             }
         }
     }
