@@ -37,13 +37,17 @@ import com.leaguehub.android.domain.model.TeamForm
 import com.leaguehub.android.domain.repository.ClubHit
 import com.leaguehub.android.domain.repository.FootballRepository
 import com.leaguehub.android.domain.schedule.PARIS
+import com.leaguehub.android.core.coroutines.ComputationDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -66,6 +70,8 @@ class FootballRepositoryImpl @Inject constructor(
     private val api: EspnApi,
     private val db: AppDatabase,
     @ApplicationContext private val context: Context,
+    /** Décodage JSON et conversion des réponses ESPN, jamais sur le thread de l'interface. */
+    @ComputationDispatcher private val computation: CoroutineDispatcher,
 ) : FootballRepository {
 
     private val json: Json = EspnJson
@@ -78,11 +84,11 @@ class FootballRepositoryImpl @Inject constructor(
             if (rows.isEmpty() || sync == null) return@combine null
             val decoded = rows.mapNotNull { runCatching { json.decodeFromString(StandingRow.serializer(), it.payload) }.getOrNull() }
             Cached(Standings(sync.extra, decoded), sync.updatedAt, fromCache = true)
-        }
+        }.flowOn(computation)
 
-    override suspend fun refreshStandings(league: LeagueConfig) {
+    override suspend fun refreshStandings(league: LeagueConfig): Unit = withContext(computation) {
         val standings = api.standings(league.espnCode).toStandings()
-        if (standings.rows.isEmpty()) return // réponse vide : on garde la base
+        if (standings.rows.isEmpty()) return@withContext // réponse vide : on garde la base
         db.standings().replace(
             league.slug,
             standings.rows.map { StandingEntity(league.slug, it.team.id, it.rank, json.encodeToString(StandingRow.serializer(), it)) },
@@ -101,10 +107,10 @@ class FootballRepositoryImpl @Inject constructor(
 
     override fun calendar(league: LeagueConfig): Flow<List<Match>> {
         val (from, to) = calendarWindow()
-        return db.matches().observe(league.espnCode, from, to).map(::decodeMatches)
+        return db.matches().observe(league.espnCode, from, to).map(::decodeMatches).flowOn(computation)
     }
 
-    override suspend fun refreshCalendar(league: LeagueConfig) {
+    override suspend fun refreshCalendar(league: LeagueConfig): Unit = withContext(computation) {
         val (from, to) = calendarWindow()
         val matches = monthsBetween(from, to).let { months -> scoreboardMonths(league.espnCode, months) }
             .filter { it.kickoff in from..to }
@@ -112,7 +118,7 @@ class FootballRepositoryImpl @Inject constructor(
         db.sync().put(SyncEntity(calendarKey(league), clock()))
     }
 
-    override suspend fun liveMatches(league: LeagueConfig): List<Match> = coroutineScope {
+    override suspend fun liveMatches(league: LeagueConfig): List<Match> = withContext(computation) {
         // Hier et aujourd'hui : un match du soir peut finir après minuit.
         val today = LocalDate.now(PARIS)
         val days = listOf(today.minusDays(1), today).map { it.format(DateTimeFormatter.BASIC_ISO_DATE) }
@@ -139,18 +145,19 @@ class FootballRepositoryImpl @Inject constructor(
     override suspend fun news(league: LeagueConfig): Cached<List<Article>> =
         cachedBlob("news:${league.slug}", ListSerializer(Article.serializer())) { api.news(league.espnCode).toArticles() }
 
-    private suspend fun <T> cachedBlob(key: String, serializer: kotlinx.serialization.KSerializer<T>, fetch: suspend () -> T): Cached<T> {
-        return try {
-            val fresh = fetch()
-            val now = clock()
-            db.blobs().put(BlobEntity(key, json.encodeToString(serializer, fresh), now))
-            Cached(fresh, now, fromCache = false)
-        } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) throw e
-            val blob = db.blobs().get(key) ?: throw e
-            Cached(json.decodeFromString(serializer, blob.json), blob.updatedAt, fromCache = true)
+    private suspend fun <T> cachedBlob(key: String, serializer: kotlinx.serialization.KSerializer<T>, fetch: suspend () -> T): Cached<T> =
+        withContext(computation) {
+            try {
+                val fresh = fetch()
+                val now = clock()
+                db.blobs().put(BlobEntity(key, json.encodeToString(serializer, fresh), now))
+                Cached(fresh, now, fromCache = false)
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                val blob = db.blobs().get(key) ?: throw e
+                Cached(json.decodeFromString(serializer, blob.json), blob.updatedAt, fromCache = true)
+            }
         }
-    }
 
     // --- Ligue des champions ---
 
@@ -169,10 +176,10 @@ class FootballRepositoryImpl @Inject constructor(
         return db.matches().observe(code, from, to).combine(db.sync().observe(UCL_KEY)) { rows, sync ->
             if (sync == null && rows.isEmpty()) null
             else Cached(decodeMatches(rows), sync?.updatedAt ?: 0L, fromCache = true)
-        }
+        }.flowOn(computation)
     }
 
-    override suspend fun refreshUclSeason() {
+    override suspend fun refreshUclSeason(): Unit = withContext(computation) {
         val (start, end) = uclSeasonWindow()
         val months = generateSequence(start) { it.plusMonths(1) }.takeWhile { it <= end }.toList()
         val code = Competitions.UCL.espnCode
@@ -185,7 +192,7 @@ class FootballRepositoryImpl @Inject constructor(
 
     // --- Club ---
 
-    override suspend fun teamForm(teamId: String, league: LeagueConfig): TeamForm = coroutineScope {
+    override suspend fun teamForm(teamId: String, league: LeagueConfig): TeamForm = withContext(computation) {
         val current = async { api.teamSchedule(teamId) }
         val fixtures = async { runCatching { api.teamSchedule(teamId, fixture = true) }.getOrNull() }
         val played = current.await()
@@ -215,13 +222,14 @@ class FootballRepositoryImpl @Inject constructor(
         goalsAgainst = matches.sumOf { it.goalsAgainst ?: 0 },
     )
 
-    override suspend fun matchDetail(competitionCode: String, eventId: String): MatchDetail =
+    override suspend fun matchDetail(competitionCode: String, eventId: String): MatchDetail = withContext(computation) {
         api.summary(competitionCode, eventId).toMatchDetail(competitionCode, eventId)
             ?: throw IllegalStateException("Match $eventId introuvable")
+    }
 
-    override suspend fun searchClubs(query: String): List<ClubHit> {
+    override suspend fun searchClubs(query: String): List<ClubHit> = withContext(computation) {
         val needle = normalize(query)
-        if (needle.length < 2) return emptyList()
+        if (needle.length < 2) return@withContext emptyList()
         val hits = LinkedHashMap<String, ClubHit>()
         for (entity in db.standings().all()) {
             val league = Competitions.bySlug(entity.league) ?: continue
@@ -235,16 +243,21 @@ class FootballRepositoryImpl @Inject constructor(
                 hits.putIfAbsent(club.id, ClubHit(Team(club.id, club.name, club.name, club.abbr, club.logo, club.color), Competitions.UCL))
             }
         }
-        return hits.values.sortedBy { it.team.name }
+        hits.values.sortedBy { it.team.name }
     }
 
     private val palmaresCache = ConcurrentHashMap<String, Map<String, ClubPalmares>>()
 
-    override suspend fun palmares(league: LeagueConfig, teamId: String): ClubPalmares? {
+    override suspend fun palmares(league: LeagueConfig, teamId: String): ClubPalmares? = withContext(computation) {
         if (league !in Competitions.LEAGUES) {
             // Club de LDC : on cherche dans les 5 championnats.
-            return Competitions.LEAGUES.firstNotNullOfOrNull { palmares(it, teamId) }
+            return@withContext Competitions.LEAGUES.firstNotNullOfOrNull { palmaresIn(it, teamId) }
         }
+        palmaresIn(league, teamId)
+    }
+
+    /** Lit (une seule fois par championnat) le fichier de palmarès embarqué dans l'APK. */
+    private fun palmaresIn(league: LeagueConfig, teamId: String): ClubPalmares? {
         val clubs = palmaresCache.getOrPut(league.slug) {
             runCatching {
                 val text = context.assets.open("palmares/${league.slug}.json").bufferedReader().use { it.readText() }
