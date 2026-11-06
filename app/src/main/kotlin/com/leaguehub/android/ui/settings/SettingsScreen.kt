@@ -8,6 +8,7 @@ import android.text.format.DateUtils
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SportsSoccer
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material3.FilledTonalButton
@@ -71,6 +73,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.leaguehub.android.R
 import com.leaguehub.android.core.theme.LocalSportColors
 import com.leaguehub.android.core.theme.parseHex
+import com.leaguehub.android.domain.leagueconfig.Competitions
 import com.leaguehub.android.domain.model.FavoriteClub
 import com.leaguehub.android.domain.model.FollowedClub
 import com.leaguehub.android.domain.repository.AppLanguage
@@ -113,6 +116,17 @@ fun SettingsScreen(onPickFavorite: () -> Unit, viewModel: SettingsViewModel = hi
                 enabled = s.favorite?.color != null,
                 onChange = { viewModel.clubTheme(it) },
             )
+        }
+
+        // Ligue favorite : ouverte par défaut dans l'onglet Ligues.
+        SettingsGroup {
+            SettingChoice(
+                Icons.Default.SportsSoccer,
+                stringResource(R.string.favorite_league),
+                stringResource(R.string.favorite_league_hint),
+            ) {
+                LeaguePicker(s.favoriteLeague) { slug -> viewModel.favoriteLeague(slug) }
+            }
         }
 
         // Notifications : alerte d'abord si Android les bloque, puis les interrupteurs et la santé du suivi.
@@ -405,10 +419,28 @@ private fun SettingSwitch(
 
 /** Réglage à choix multiple : icône et titre, puis les options en boutons segmentés. */
 @Composable
-private fun SettingChoice(icon: ImageVector, title: String, choice: @Composable () -> Unit) {
+private fun SettingChoice(icon: ImageVector, title: String, subtitle: String? = null, choice: @Composable () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(bottom = 14.dp)) {
-        SettingRow(icon, title)
+        SettingRow(icon, title, subtitle)
         Box(Modifier.padding(horizontal = 16.dp)) { choice() }
+    }
+}
+
+/** Les 5 championnats en pastilles ; toucher la ligue choisie la retire. */
+@Composable
+private fun LeaguePicker(selected: String?, onSelect: (String?) -> Unit) {
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Competitions.LEAGUES.forEach { league ->
+            val isSelected = league.slug == selected
+            FilterChip(
+                selected = isSelected,
+                onClick = { onSelect(if (isSelected) null else league.slug) },
+                label = { Text(league.name) },
+                leadingIcon = if (isSelected) {
+                    { Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                } else null,
+            )
+        }
     }
 }
 
