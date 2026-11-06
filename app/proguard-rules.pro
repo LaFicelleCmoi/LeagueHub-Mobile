@@ -15,3 +15,8 @@
 -dontwarn retrofit2.**
 -dontwarn okhttp3.**
 -dontwarn okio.**
+
+# Glance repère chaque widget par le nom de sa classe : R8 ne doit ni les renommer ni les fusionner,
+# sinon « Mon club » et « Matchs du jour » partagent une classe et Glance dessine l'un dans la case de l'autre.
+-keep class * extends androidx.glance.appwidget.GlanceAppWidget { <init>(); }
+-keep class * extends androidx.glance.appwidget.GlanceAppWidgetReceiver { <init>(); }
