@@ -6,6 +6,17 @@ import com.leaguehub.android.ui.components.LiveDot
 import com.leaguehub.android.ui.components.EmptyState
 import com.leaguehub.android.ui.components.AppCard
 import com.leaguehub.android.core.util.formatTime
+import com.leaguehub.android.core.util.formatDay
+import com.leaguehub.android.core.util.formatShortDate
+import com.leaguehub.android.app.calendar.CalendarSync
+import android.content.ActivityNotFoundException
+import android.widget.Toast
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -91,7 +102,12 @@ private fun DetailContent(d: MatchDetail, onPlayer: (String) -> Unit) {
                         ScoreSide(m.home.team.name, m.home.team.logo, Modifier.weight(1f))
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                if (m.state == MatchState.PRE) formatTime(m.kickoff) else "${m.home.score ?: 0} – ${m.away.score ?: 0}",
+                                when {
+                                    m.state != MatchState.PRE -> "${m.home.score ?: 0} – ${m.away.score ?: 0}"
+                                    // Heure provisoire d'ESPN : seul le jour est sûr.
+                                    !m.timeConfirmed -> formatShortDate(m.kickoff)
+                                    else -> formatTime(m.kickoff)
+                                },
                                 style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black,
                                 color = if (m.state == MatchState.PRE) LocalSportColors.current.accent else MaterialTheme.colorScheme.onSurface,
                             )
@@ -104,7 +120,8 @@ private fun DetailContent(d: MatchDetail, onPlayer: (String) -> Unit) {
                         ScoreSide(m.away.team.name, m.away.team.logo, Modifier.weight(1f))
                     }
                     val info = listOfNotNull(
-                        formatDateTime(m.kickoff), m.venue, d.referee?.let { stringResource(R.string.referee, it) },
+                        if (m.timeConfirmed) formatDateTime(m.kickoff) else formatDay(m.kickoff) + " · " + stringResource(R.string.time_tbd),
+                        m.venue, d.referee?.let { stringResource(R.string.referee, it) },
                         d.attendance?.let { stringResource(R.string.attendance, it) },
                     )
                     HorizontalDivider(Modifier.padding(vertical = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
@@ -113,6 +130,7 @@ private fun DetailContent(d: MatchDetail, onPlayer: (String) -> Unit) {
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                     )
+                    if (m.state == MatchState.PRE) AddToCalendarButton(m, Modifier.align(Alignment.CenterHorizontally).padding(top = 12.dp))
                 }
             }
         }
@@ -146,6 +164,26 @@ private fun DetailContent(d: MatchDetail, onPlayer: (String) -> Unit) {
         if (timeline.isEmpty() && d.stats.isEmpty() && !hasLineups) {
             item { EmptyState(stringResource(R.string.no_details)) }
         }
+    }
+}
+
+/** Ouvre l'appli d'agenda sur un événement pré-rempli : l'utilisateur n'a plus qu'à valider. */
+@Composable
+private fun AddToCalendarButton(m: Match, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    FilledTonalButton(
+        onClick = {
+            try {
+                context.startActivity(CalendarSync.addMatchIntent(context, m))
+            } catch (_: ActivityNotFoundException) {
+                Toast.makeText(context, R.string.no_calendar_app, Toast.LENGTH_SHORT).show()
+            }
+        },
+        modifier = modifier,
+    ) {
+        Icon(Icons.Default.Event, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(stringResource(R.string.add_to_calendar))
     }
 }
 
