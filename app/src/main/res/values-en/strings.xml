@@ -269,4 +269,20 @@
     <string name="player_cards">Cards Y / R</string>
     <string name="player_games">Matches</string>
     <string name="player_no_games">No league match played this season.</string>
+    <string name="settings_calendar">Calendar</string>
+    <string name="calendar_sync">Matches in my calendar</string>
+    <string name="calendar_sync_hint">Adds upcoming matches of your club and followed clubs, and keeps kick-off times up to date.</string>
+    <string name="calendar_syncing">Updating calendar…</string>
+    <plurals name="calendar_sync_count">
+        <item quantity="one">%d upcoming match in the calendar</item>
+        <item quantity="other">%d upcoming matches in the calendar</item>
+    </plurals>
+    <string name="calendar_denied">Calendar access denied.</string>
+    <string name="calendar_open_settings">Allow</string>
+    <string name="calendar_none">No editable calendar on this phone.</string>
+    <string name="calendar_title_tbd">%1$s (time to be confirmed)</string>
+    <string name="calendar_description">%1$s · added by LeagueHub</string>
+    <string name="add_to_calendar">Add to calendar</string>
+    <string name="no_calendar_app">No calendar app found</string>
+    <string name="time_tbd">time to be confirmed</string>
 </resources>
