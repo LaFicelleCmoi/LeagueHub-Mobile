@@ -11,6 +11,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,23 +63,23 @@ import com.leaguehub.android.ui.components.statusLabel
 
 /** Point d'entrée de la navigation : relie l'écran à son ViewModel. */
 @Composable
-fun MatchDetailRoute(viewModel: MatchDetailViewModel = hiltViewModel()) {
+fun MatchDetailRoute(onPlayer: (athleteId: String) -> Unit, viewModel: MatchDetailViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    MatchDetailScreen(state, onRetry = viewModel::retry)
+    MatchDetailScreen(state, onRetry = viewModel::retry, onPlayer = onPlayer)
 }
 
 /** Écran sans état : n'affiche que ce que [state] décrit. */
 @Composable
-fun MatchDetailScreen(state: MatchDetailUiState, onRetry: () -> Unit) {
+fun MatchDetailScreen(state: MatchDetailUiState, onRetry: () -> Unit, onPlayer: (athleteId: String) -> Unit = {}) {
     when (state) {
-        is MatchDetailUiState.Content -> DetailContent(state.detail)
+        is MatchDetailUiState.Content -> DetailContent(state.detail, onPlayer)
         MatchDetailUiState.Error -> ErrorState(onRetry = onRetry)
         MatchDetailUiState.Loading -> LoadingState()
     }
 }
 
 @Composable
-private fun DetailContent(d: MatchDetail) {
+private fun DetailContent(d: MatchDetail, onPlayer: (String) -> Unit) {
     val m = d.match
     val live = m.state == MatchState.IN
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp)) {
@@ -137,7 +138,7 @@ private fun DetailContent(d: MatchDetail) {
             item {
                 AppCard(Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
                     Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        d.lineups.sortedBy { it.side }.forEach { LineupColumn(it, Modifier.weight(1f)) }
+                        d.lineups.sortedBy { it.side }.forEach { LineupColumn(it, onPlayer, Modifier.weight(1f)) }
                     }
                 }
             }
@@ -239,7 +240,7 @@ private fun statLabel(s: MatchStat): String = when (s.key) {
 }
 
 @Composable
-private fun LineupColumn(lineup: Lineup, modifier: Modifier) {
+private fun LineupColumn(lineup: Lineup, onPlayer: (String) -> Unit, modifier: Modifier) {
     Column(modifier) {
         Text(lineup.team.shortName, style = MaterialTheme.typography.titleSmall)
         lineup.formation?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -251,10 +252,14 @@ private fun LineupColumn(lineup: Lineup, modifier: Modifier) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 10.dp, bottom = 2.dp),
                 )
             }
+            // Ligne entière cliquable, assez haute pour viser un nom au doigt.
             Text(
                 "${p.jersey ?: ""} ${p.name}".trim(),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (p.starter) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp))
+                    .clickable(enabled = p.id.isNotEmpty()) { onPlayer(p.id) }.padding(vertical = 5.dp),
             )
         }
     }
