@@ -225,8 +225,16 @@ class FootballRepositoryImpl @Inject constructor(
     )
 
     override suspend fun matchDetail(competitionCode: String, eventId: String): MatchDetail = withContext(computation) {
-        api.summary(competitionCode, eventId).toMatchDetail(competitionCode, eventId)
+        val detail = api.summary(competitionCode, eventId).toMatchDetail(competitionCode, eventId)
             ?: throw IllegalStateException("Match $eventId introuvable")
+        if (detail.match.state != MatchState.PRE) return@withContext detail
+        // Le résumé ne dit pas si l'heure est provisoire : le programme du jour, lui, le dit.
+        val day = java.time.Instant.ofEpochMilli(detail.match.kickoff).atZone(java.time.ZoneOffset.UTC).toLocalDate()
+        val confirmed = runCatching {
+            api.scoreboard(competitionCode, day.format(DateTimeFormatter.BASIC_ISO_DATE)).toMatches(competitionCode)
+                .firstOrNull { it.id == eventId }?.timeConfirmed
+        }.getOrNull() ?: true
+        detail.copy(match = detail.match.copy(timeConfirmed = confirmed))
     }
 
     override suspend fun player(athleteId: String): Cached<PlayerProfile> =
