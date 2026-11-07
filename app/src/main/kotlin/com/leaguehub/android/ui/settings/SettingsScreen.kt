@@ -27,6 +27,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material3.RadioButton
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.foundation.clickable
+import android.net.Uri
+import com.leaguehub.android.app.calendar.CalendarSync
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
@@ -93,8 +99,13 @@ fun SettingsScreen(onPickFavorite: () -> Unit, viewModel: SettingsViewModel = hi
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
     // Permission et santé de l'arrière-plan changent hors de l'app : relues à chaque retour sur l'écran.
     var status by remember { mutableStateOf(viewModel.systemStatus()) }
+    val calendar by viewModel.calendar.collectAsStateWithLifecycle()
+    val calendarPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+        viewModel.onCalendarPermission(result.values.all { it })
+    }
     LifecycleResumeEffect(Unit) {
         status = viewModel.systemStatus()
+        viewModel.refreshCalendars()
         onPauseOrDispose { }
     }
     val openNotificationSettings = {
@@ -194,6 +205,30 @@ fun SettingsScreen(onPickFavorite: () -> Unit, viewModel: SettingsViewModel = hi
                 Spacer(Modifier.width(6.dp))
                 Text(stringResource(R.string.add_club))
             }
+        }
+
+        // Agenda du téléphone : matchs à venir recopiés et tenus à jour.
+        SectionHeader(stringResource(R.string.settings_calendar))
+        SettingsGroup {
+            CalendarSettings(
+                enabled = s.calendarSync,
+                selectedId = s.calendarId,
+                ui = calendar,
+                onToggle = { on ->
+                    when {
+                        !on -> viewModel.disableCalendar()
+                        calendar.permitted -> viewModel.enableCalendar()
+                        else -> calendarPermission.launch(CalendarSync.PERMISSIONS)
+                    }
+                },
+                onChoose = viewModel::chooseCalendar,
+                onOpenAppSettings = {
+                    context.startActivity(
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    )
+                },
+            )
         }
 
         SectionHeader(stringResource(R.string.settings_appearance))
@@ -423,6 +458,76 @@ private fun SettingChoice(icon: ImageVector, title: String, subtitle: String? = 
     Column(Modifier.fillMaxWidth().padding(bottom = 14.dp)) {
         SettingRow(icon, title, subtitle)
         Box(Modifier.padding(horizontal = 16.dp)) { choice() }
+    }
+}
+
+/** Interrupteur de la recopie dans l'agenda, puis le choix de l'agenda s'il y en a plusieurs. */
+@Composable
+private fun CalendarSettings(
+    enabled: Boolean,
+    selectedId: Long?,
+    ui: CalendarUi,
+    onToggle: (Boolean) -> Unit,
+    onChoose: (Long) -> Unit,
+    onOpenAppSettings: () -> Unit,
+) {
+    val selected = ui.calendars.firstOrNull { it.id == selectedId }
+    val subtitle = when {
+        !enabled -> stringResource(R.string.calendar_sync_hint)
+        ui.syncing -> stringResource(R.string.calendar_syncing)
+        else -> pluralStringResource(R.plurals.calendar_sync_count, ui.upcoming, ui.upcoming) +
+            (selected?.let { " · " + it.name } ?: "")
+    }
+    SettingSwitch(
+        icon = Icons.Default.Event,
+        title = stringResource(R.string.calendar_sync),
+        subtitle = subtitle,
+        checked = enabled,
+        onChange = onToggle,
+    )
+    if (ui.denied && !enabled) {
+        SegmentDivider()
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.calendar_denied), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onOpenAppSettings) { Text(stringResource(R.string.calendar_open_settings)) }
+        }
+    }
+    if (enabled && ui.permitted && ui.calendars.isEmpty()) {
+        SegmentDivider()
+        Text(
+            stringResource(R.string.calendar_none), style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp),
+        )
+    }
+    // Un seul agenda : pas de choix à faire.
+    if (enabled && ui.calendars.size > 1) {
+        SegmentDivider()
+        Column(Modifier.padding(vertical = 4.dp)) {
+            ui.calendars.forEach { cal ->
+                Row(
+                    Modifier.fillMaxWidth().clickable(enabled = !ui.syncing) { onChoose(cal.id) }
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(selected = cal.id == selectedId, onClick = null, enabled = !ui.syncing)
+                    Spacer(Modifier.width(10.dp))
+                    Box(Modifier.size(10.dp).clip(CircleShape).background(Color(cal.color)))
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(cal.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        if (cal.account.isNotEmpty() && cal.account != cal.name) {
+                            Text(
+                                cal.account, style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
