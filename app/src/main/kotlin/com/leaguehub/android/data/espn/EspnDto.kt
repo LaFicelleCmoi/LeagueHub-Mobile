@@ -106,6 +106,8 @@ data class EspnVenue(val fullName: String? = null)
 data class EspnCompetition(
     val id: String = "",
     val date: String? = null,
+    /** false : heure provisoire, le match n'est pas encore programmé précisément. */
+    val timeValid: Boolean? = null,
     val status: EspnStatus? = null,
     val venue: EspnVenue? = null,
     val competitors: List<EspnCompetitor> = emptyList(),
