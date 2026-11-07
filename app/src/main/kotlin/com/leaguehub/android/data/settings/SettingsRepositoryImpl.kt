@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -39,6 +40,8 @@ class SettingsRepositoryImpl @Inject constructor(
         val NOTIFY_GOALS = booleanPreferencesKey("notify_goals")
         val FOLLOWED = stringPreferencesKey("followed")
         val FAVORITE_LEAGUE = stringPreferencesKey("favorite_league")
+        val CALENDAR_SYNC = booleanPreferencesKey("calendar_sync")
+        val CALENDAR_ID = longPreferencesKey("calendar_id")
     }
 
     private val followedSerializer = ListSerializer(FollowedClub.serializer())
@@ -64,6 +67,8 @@ class SettingsRepositoryImpl @Inject constructor(
             followed = decodeFollowed(p[Keys.FOLLOWED]),
             // Un slug inconnu (championnat retiré d'une version) retombe sur le comportement par défaut.
             favoriteLeague = p[Keys.FAVORITE_LEAGUE]?.takeIf { slug -> Competitions.LEAGUES.any { it.slug == slug } },
+            calendarSync = p[Keys.CALENDAR_SYNC] ?: false,
+            calendarId = p[Keys.CALENDAR_ID],
         )
     }
 
@@ -106,6 +111,13 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setFavoriteLeague(slug: String?) {
         context.settingsStore.edit {
             if (slug == null) it.remove(Keys.FAVORITE_LEAGUE) else it[Keys.FAVORITE_LEAGUE] = slug
+        }
+    }
+
+    override suspend fun setCalendarSync(enabled: Boolean, calendarId: Long?) {
+        context.settingsStore.edit {
+            it[Keys.CALENDAR_SYNC] = enabled
+            if (calendarId == null) it.remove(Keys.CALENDAR_ID) else it[Keys.CALENDAR_ID] = calendarId
         }
     }
 }
