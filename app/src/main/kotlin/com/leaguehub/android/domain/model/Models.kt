@@ -93,6 +93,8 @@ data class Match(
     val events: List<MatchEvent> = emptyList(),
     /** Tour d'une coupe (« league-phase », « round-of-16 »…), slug ESPN. */
     val roundSlug: String? = null,
+    /** false : ESPN n'a mis qu'une heure provisoire, seul le jour est sûr. */
+    val timeConfirmed: Boolean = true,
 ) {
     fun side(side: Side): MatchSide = if (side == Side.HOME) home else away
     fun involves(teamId: String): Boolean = home.team.id == teamId || away.team.id == teamId
@@ -199,6 +201,8 @@ data class ClubMatch(
     val detail: String?,
     val venue: String?,
     val europeanCup: EuropeanCup?,
+    /** false : ESPN n'a mis qu'une heure provisoire, seul le jour est sûr. */
+    val timeConfirmed: Boolean = true,
 )
 
 data class SeasonTotals(
