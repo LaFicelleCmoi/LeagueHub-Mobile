@@ -1,5 +1,6 @@
 package com.leaguehub.android.app.work
 
+import com.leaguehub.android.app.calendar.CalendarSync
 import com.leaguehub.android.widget.WidgetUpdater
 import com.leaguehub.android.widget.TodayWidgetState
 import com.leaguehub.android.domain.model.FavoriteClub
@@ -35,6 +36,7 @@ class SyncWorker @AssistedInject constructor(
     @Assisted params: WorkerParameters,
     private val football: FootballRepository,
     private val settings: SettingsRepository,
+    private val calendar: CalendarSync,
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -78,6 +80,8 @@ class SyncWorker @AssistedInject constructor(
         val soon = (listOfNotNull(club?.nextKickoff, TodayWidgetState.nextKickoff(applicationContext)) + followedKickoffs)
             .any { it - now in 0..WIDGET_WAKE_MS }
         if (anyLive || soon) LiveWidgetWorker.ensureRunning(applicationContext)
+        // Agenda du téléphone : horaires fixés ou décalés, matchs reportés.
+        runCatching { calendar.syncIfDue(now) }
         BackgroundHealth.record(applicationContext, failed = favorite != null && club == null, now = now)
         // Toujours « succès » : un échec réseau ponctuel ne doit pas repousser la synchro suivante (backoff).
         return Result.success()
