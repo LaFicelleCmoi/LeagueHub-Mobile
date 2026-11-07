@@ -9,6 +9,7 @@ import com.leaguehub.android.domain.model.FollowedClub
 import com.leaguehub.android.domain.model.Leaders
 import com.leaguehub.android.domain.model.Match
 import com.leaguehub.android.domain.model.MatchDetail
+import com.leaguehub.android.domain.model.PlayerProfile
 import com.leaguehub.android.domain.model.Standings
 import com.leaguehub.android.domain.model.Team
 import com.leaguehub.android.domain.model.TeamForm
@@ -41,6 +42,9 @@ interface FootballRepository {
 
     suspend fun teamForm(teamId: String, league: LeagueConfig): TeamForm
     suspend fun matchDetail(competitionCode: String, eventId: String): MatchDetail
+
+    /** Fiche d'un joueur (bio, saison, matchs) ; la dernière version reste lisible hors ligne. */
+    suspend fun player(athleteId: String): Cached<PlayerProfile>
 
     /** Clubs connus (classements en base + qualifiés LDC) dont le nom contient [query]. */
     suspend fun searchClubs(query: String): List<ClubHit>
