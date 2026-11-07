@@ -242,3 +242,67 @@ data class EspnSummaryResponse(
     val rosters: List<EspnRoster> = emptyList(),
     val gameInfo: EspnGameInfo? = null,
 )
+
+// --- Joueur : /apis/common/v3/sports/soccer/athletes/{id} (+ /gamelog), sur site.web.api.espn.com ---
+
+@Serializable
+data class EspnFlag(val href: String? = null)
+
+@Serializable
+data class EspnStatsSummary(val statistics: List<EspnStat> = emptyList())
+
+@Serializable
+data class EspnAthlete(
+    val id: String = "",
+    val displayName: String = "",
+    val jersey: String? = null,
+    val position: EspnPosition? = null,
+    val age: Int? = null,
+    /** Jour/mois/année, ex. « 9/2/1993 ». */
+    val displayDOB: String? = null,
+    val citizenship: String? = null,
+    val flag: EspnFlag? = null,
+    /** Unités impériales, ex. « 6' 1" » et « 179 lbs ». */
+    val displayHeight: String? = null,
+    val displayWeight: String? = null,
+    val team: EspnTeam? = null,
+    val statsSummary: EspnStatsSummary? = null,
+)
+
+@Serializable
+data class EspnAthleteLeague(val slug: String? = null, val name: String? = null)
+
+@Serializable
+data class EspnAthleteResponse(val athlete: EspnAthlete = EspnAthlete(), val league: EspnAthleteLeague? = null)
+
+@Serializable
+data class EspnGamelogEvent(
+    val id: String = "",
+    val gameDate: String? = null,
+    /** « vs » à domicile, « @ » à l'extérieur. */
+    val atVs: String? = null,
+    val homeTeamId: String? = null,
+    val homeTeamScore: String? = null,
+    val awayTeamScore: String? = null,
+    /** « W », « D » ou « L ». */
+    val gameResult: String? = null,
+    val opponent: EspnTeam? = null,
+    val team: EspnTeam? = null,
+)
+
+@Serializable
+data class EspnGamelogLine(val eventId: String = "", val stats: List<String> = emptyList())
+
+@Serializable
+data class EspnGamelogCategory(val events: List<EspnGamelogLine> = emptyList())
+
+@Serializable
+data class EspnGamelogSeason(val categories: List<EspnGamelogCategory> = emptyList())
+
+@Serializable
+data class EspnGamelogResponse(
+    /** Nom de chaque colonne de `stats` (totalGoals, goalAssists…). */
+    val names: List<String> = emptyList(),
+    val events: Map<String, EspnGamelogEvent> = emptyMap(),
+    val seasonTypes: List<EspnGamelogSeason> = emptyList(),
+)
