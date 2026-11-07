@@ -71,6 +71,7 @@ import com.leaguehub.android.ui.home.HomeScreen
 import com.leaguehub.android.ui.ldctracker.LdcScreen
 import com.leaguehub.android.ui.league.LeagueScreen
 import com.leaguehub.android.ui.matchdetail.MatchDetailRoute
+import com.leaguehub.android.ui.player.PlayerRoute
 import com.leaguehub.android.ui.search.SearchScreen
 import com.leaguehub.android.ui.settings.SettingsScreen
 
@@ -82,10 +83,12 @@ object Routes {
     const val SETTINGS = "settings"
     const val CLUB = "club/{league}/{teamId}"
     const val MATCH = "match/{competition}/{eventId}"
+    const val PLAYER = "player/{athleteId}"
 
     fun league(slug: String) = "league/$slug"
     fun club(league: String, teamId: String) = "club/$league/$teamId"
     fun match(competition: String, eventId: String) = "match/$competition/$eventId"
+    fun player(athleteId: String) = "player/$athleteId"
 }
 
 private data class TopLevel(val route: String, val pattern: String, val label: Int, val icon: ImageVector)
@@ -121,6 +124,7 @@ fun AppNavHost(favoriteLeague: String? = null, navController: NavHostController 
     }
     fun openTeam(league: String, teamId: String) = navController.navigate(Routes.club(league, teamId))
     fun openMatch(competition: String, eventId: String) = navController.navigate(Routes.match(competition, eventId))
+    fun openPlayer(athleteId: String) = navController.navigate(Routes.player(athleteId))
 
     Scaffold(
         topBar = {
@@ -136,6 +140,7 @@ fun AppNavHost(favoriteLeague: String? = null, navController: NavHostController 
                             Routes.SETTINGS -> stringResource(R.string.nav_settings)
                             Routes.CLUB -> stringResource(R.string.club)
                             Routes.MATCH -> stringResource(R.string.match)
+                            Routes.PLAYER -> stringResource(R.string.player)
                             else -> stringResource(R.string.app_name)
                         },
                         style = MaterialTheme.typography.headlineSmall,
@@ -190,6 +195,7 @@ fun AppNavHost(favoriteLeague: String? = null, navController: NavHostController 
                     LeagueScreen(
                         onTeam = { teamId -> openTeam(slug, teamId) },
                         onMatch = { m: Match -> openMatch(m.competition, m.id) },
+                        onPlayer = ::openPlayer,
                     )
                 }
             }
@@ -209,7 +215,10 @@ fun AppNavHost(favoriteLeague: String? = null, navController: NavHostController 
                 ClubScreen(onMatch = ::openMatch)
             }
             composable(Routes.MATCH, deepLinks = listOf(navDeepLink { uriPattern = "leaguehub://match/{competition}/{eventId}" })) {
-                MatchDetailRoute()
+                MatchDetailRoute(onPlayer = ::openPlayer)
+            }
+            composable(Routes.PLAYER) {
+                PlayerRoute(onTeam = ::openTeam, onMatch = ::openMatch)
             }
         }
     }
