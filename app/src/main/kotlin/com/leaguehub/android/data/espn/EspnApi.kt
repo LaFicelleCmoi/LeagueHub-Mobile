@@ -34,7 +34,16 @@ interface EspnApi {
     @GET("site/v2/sports/soccer/{code}/summary")
     suspend fun summary(@Path("code") code: String, @Query("event") eventId: String): EspnSummaryResponse
 
+    /** Fiche d'un joueur : servie par un autre hôte ESPN, d'où l'URL complète. */
+    @GET("$ATHLETES_URL{id}")
+    suspend fun athlete(@Path("id") athleteId: String): EspnAthleteResponse
+
+    /** Ses matchs de championnat de la saison en cours, avec ses stats dans chacun. */
+    @GET("$ATHLETES_URL{id}/gamelog")
+    suspend fun athleteGamelog(@Path("id") athleteId: String): EspnGamelogResponse
+
     companion object {
         const val BASE_URL = "https://site.api.espn.com/apis/"
+        const val ATHLETES_URL = "https://site.web.api.espn.com/apis/common/v3/sports/soccer/athletes/"
     }
 }
