@@ -84,6 +84,7 @@ import com.leaguehub.android.ui.components.TeamLogo
 fun LeagueScreen(
     onTeam: (teamId: String) -> Unit,
     onMatch: (Match) -> Unit,
+    onPlayer: (athleteId: String) -> Unit,
     viewModel: LeagueViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -114,7 +115,7 @@ fun LeagueScreen(
                     0 -> StandingsTab(state, onTeam, viewModel::refresh)
                     1 -> SeasonTab(state, viewModel)
                     2 -> MatchesTab(state, onMatch)
-                    3 -> ScorersTab(viewModel, onTeam)
+                    3 -> ScorersTab(viewModel, onPlayer)
                     else -> NewsTab(viewModel)
                 }
             }
@@ -250,7 +251,7 @@ private fun LazyListScope.dayGroups(matches: List<Match>, favoriteId: String?, o
 }
 
 @Composable
-private fun ScorersTab(viewModel: LeagueViewModel, onTeam: (String) -> Unit) {
+private fun ScorersTab(viewModel: LeagueViewModel, onPlayer: (String) -> Unit) {
     LaunchedEffect(Unit) { viewModel.loadLeaders() }
     val leaders by viewModel.leaders.collectAsStateWithLifecycle()
     when (val l = leaders) {
@@ -260,9 +261,9 @@ private fun ScorersTab(viewModel: LeagueViewModel, onTeam: (String) -> Unit) {
             val goals = l.value.data.goals
             val assists = l.value.data.assists
             if (goals.isNotEmpty()) item { SectionTitle(stringResource(R.string.top_scorers)) }
-            itemsIndexed(goals, key = { _, it -> "g" + it.id }) { i, it -> LeaderRow(it, onTeam, segmentPosition(i, goals.size)) }
+            itemsIndexed(goals, key = { _, it -> "g" + it.id }) { i, it -> LeaderRow(it, onPlayer, segmentPosition(i, goals.size)) }
             if (assists.isNotEmpty()) item { SectionTitle(stringResource(R.string.top_assists)) }
-            itemsIndexed(assists, key = { _, it -> "a" + it.id }) { i, it -> LeaderRow(it, onTeam, segmentPosition(i, assists.size)) }
+            itemsIndexed(assists, key = { _, it -> "a" + it.id }) { i, it -> LeaderRow(it, onPlayer, segmentPosition(i, assists.size)) }
             item { Spacer(Modifier.height(24.dp)) }
             if (l.value.data.goals.isEmpty() && l.value.data.assists.isEmpty()) {
                 item { EmptyState(stringResource(R.string.no_scorers)) }
@@ -272,12 +273,12 @@ private fun ScorersTab(viewModel: LeagueViewModel, onTeam: (String) -> Unit) {
 }
 
 @Composable
-private fun LeaderRow(leader: Leader, onTeam: (String) -> Unit, position: SegmentPosition) {
+private fun LeaderRow(leader: Leader, onPlayer: (String) -> Unit, position: SegmentPosition) {
     Column(Modifier.listSegment(position)) {
     if (position == SegmentPosition.Middle || position == SegmentPosition.Last) SegmentDivider()
     Row(
         Modifier.fillMaxWidth()
-            .clickable(enabled = leader.team != null) { leader.team?.let { onTeam(it.id) } }
+            .clickable { onPlayer(leader.id) }
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
