@@ -69,6 +69,10 @@ data class AppSettings(
     val followed: List<FollowedClub> = emptyList(),
     /** Slug du championnat ouvert par défaut dans l'onglet Ligues (null = le premier de la liste). */
     val favoriteLeague: String? = null,
+    /** Matchs à venir des clubs suivis recopiés dans l'agenda du téléphone. */
+    val calendarSync: Boolean = false,
+    /** Agenda choisi pour cette recopie (identifiant Android). */
+    val calendarId: Long? = null,
 ) {
     /** Le favori puis les clubs suivis, sans doublon. */
     val allClubs: List<FavoriteClub> get() = (listOfNotNull(favorite) + followed.map { it.club }).distinctBy { it.teamId }
@@ -85,4 +89,5 @@ interface SettingsRepository {
     suspend fun unfollow(teamId: String)
     suspend fun setFollowedNotifications(teamId: String, kickoff: Boolean, goals: Boolean)
     suspend fun setFavoriteLeague(slug: String?)
+    suspend fun setCalendarSync(enabled: Boolean, calendarId: Long?)
 }
