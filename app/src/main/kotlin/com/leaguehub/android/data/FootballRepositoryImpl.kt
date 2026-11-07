@@ -13,6 +13,7 @@ import com.leaguehub.android.data.espn.toClubMatches
 import com.leaguehub.android.data.espn.toLeaders
 import com.leaguehub.android.data.espn.toMatchDetail
 import com.leaguehub.android.data.espn.toMatches
+import com.leaguehub.android.data.espn.toPlayerProfile
 import com.leaguehub.android.data.espn.toStandings
 import com.leaguehub.android.data.espn.toTeam
 import com.leaguehub.android.data.ldc.Draw2026
@@ -29,6 +30,7 @@ import com.leaguehub.android.domain.model.Match
 import com.leaguehub.android.domain.model.MatchDetail
 import com.leaguehub.android.domain.model.MatchOutcome
 import com.leaguehub.android.domain.model.MatchState
+import com.leaguehub.android.domain.model.PlayerProfile
 import com.leaguehub.android.domain.model.SeasonTotals
 import com.leaguehub.android.domain.model.StandingRow
 import com.leaguehub.android.domain.model.Standings
@@ -226,6 +228,16 @@ class FootballRepositoryImpl @Inject constructor(
         api.summary(competitionCode, eventId).toMatchDetail(competitionCode, eventId)
             ?: throw IllegalStateException("Match $eventId introuvable")
     }
+
+    override suspend fun player(athleteId: String): Cached<PlayerProfile> =
+        cachedBlob("player:$athleteId", PlayerProfile.serializer()) {
+            coroutineScope {
+                val bio = async { api.athlete(athleteId) }
+                // Sans historique, la fiche reste utile : bio et totaux officiels.
+                val gamelog = async { runCatching { api.athleteGamelog(athleteId) }.getOrNull() }
+                toPlayerProfile(bio.await(), gamelog.await())
+            }
+        }
 
     override suspend fun searchClubs(query: String): List<ClubHit> = withContext(computation) {
         val needle = normalize(query)
