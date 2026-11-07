@@ -186,6 +186,7 @@ fun EspnEvent.toMatch(competitionCode: String): Match? {
         away = side(away),
         events = competition.details.mapNotNull { it.toMatchEvent(home.team.id) },
         roundSlug = season?.slug,
+        timeConfirmed = competition.timeValid != false,
     )
 }
 
@@ -318,6 +319,7 @@ fun EspnEvent.toClubMatch(teamId: String): ClubMatch? {
         detail = detail,
         venue = competition.venue?.fullName,
         europeanCup = europeanCup(slug),
+        timeConfirmed = competition.timeValid != false,
     )
 }
 
