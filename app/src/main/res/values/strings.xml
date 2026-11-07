@@ -286,4 +286,21 @@
     <string name="player_cards">Cartons J / R</string>
     <string name="player_games">Ses matchs</string>
     <string name="player_no_games">Aucun match de championnat joué cette saison.</string>
+    <string name="settings_calendar">Agenda</string>
+    <string name="calendar_sync">Matchs dans mon agenda</string>
+    <string name="calendar_sync_hint">Ajoute les matchs à venir de ton club et des clubs suivis, et met à jour les horaires tout seul.</string>
+    <string name="calendar_syncing">Mise à jour de l\'agenda…</string>
+    <plurals name="calendar_sync_count">
+        <item quantity="one">%d match à venir dans l\'agenda</item>
+        <item quantity="many">%d matchs à venir dans l\'agenda</item>
+        <item quantity="other">%d matchs à venir dans l\'agenda</item>
+    </plurals>
+    <string name="calendar_denied">Accès à l\'agenda refusé.</string>
+    <string name="calendar_open_settings">Autoriser</string>
+    <string name="calendar_none">Aucun agenda modifiable sur ce téléphone.</string>
+    <string name="calendar_title_tbd">%1$s (horaire à confirmer)</string>
+    <string name="calendar_description">%1$s · ajouté par LeagueHub</string>
+    <string name="add_to_calendar">Ajouter à l\'agenda</string>
+    <string name="no_calendar_app">Aucune appli d\'agenda trouvée</string>
+    <string name="time_tbd">horaire à confirmer</string>
 </resources>
