@@ -267,4 +267,23 @@
     <string name="league_next_day">Prochaine journée · %1$s</string>
     <string name="widget_refresh_failed">Échec</string>
     <string name="widget_refresh">Actualiser</string>
+    <string name="player">Joueur</string>
+    <string name="position_goalkeeper">Gardien</string>
+    <string name="position_defender">Défenseur</string>
+    <string name="position_midfielder">Milieu</string>
+    <string name="position_forward">Attaquant</string>
+    <string name="player_age">%1$d ans</string>
+    <string name="player_age_born">%1$d ans · né le %2$s</string>
+    <string name="player_height">%1$d cm</string>
+    <string name="player_weight">%1$d kg</string>
+    <string name="player_season">Saison</string>
+    <string name="player_season_in">Saison · %1$s</string>
+    <string name="player_goals">Buts</string>
+    <string name="player_assists">Passes déc.</string>
+    <string name="player_starts">Titulaire (entré)</string>
+    <string name="player_starts_value">%1$d (%2$d)</string>
+    <string name="player_shots">Tirs (cadrés)</string>
+    <string name="player_cards">Cartons J / R</string>
+    <string name="player_games">Ses matchs</string>
+    <string name="player_no_games">Aucun match de championnat joué cette saison.</string>
 </resources>
